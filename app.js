@@ -51,6 +51,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentFrame = 0;
   let opacity = 0.7;
 
+  // Sistema de precarga y cache
+  let preloadedImages = new Map(); // Mapa de URL -> HTMLImageElement
+  let imageCache = null; // Cache API
+  const CACHE_NAME = 'radar-images-v1';
+  const MAX_CACHE_SIZE = 100; // Máximo de imágenes en cache
+
   // ============================================================================
   // ELEMENTOS DEL DOM
   // ============================================================================
@@ -82,6 +88,14 @@ document.addEventListener('DOMContentLoaded', () => {
     lastBtn: document.getElementById('animation-last'),
     refresh: document.getElementById('refresh-button'),
     refreshIcon: document.getElementById('refresh-icon'),
+    exportGif: document.getElementById('export-gif-btn'),
+
+    // Precarga
+    preloadProgress: document.getElementById('preload-progress'),
+    preloadBar: document.getElementById('preload-bar'),
+    preloadStatus: document.getElementById('preload-status'),
+    preloadPercentage: document.getElementById('preload-percentage'),
+    preloadDetails: document.getElementById('preload-details'),
 
     // Sidebar
     opacitySlider: document.getElementById('overlay-opacity'),
@@ -179,6 +193,259 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================================
+  // SISTEMA DE CACHE Y PRECARGA
+  // ============================================================================
+
+  /**
+   * Inicializa el sistema de cache usando Cache API
+   */
+  async function initializeCache() {
+    try {
+      if ('caches' in window) {
+        imageCache = await caches.open(CACHE_NAME);
+        console.log('Sistema de cache inicializado');
+      } else {
+        console.warn('Cache API no disponible en este navegador');
+      }
+    } catch (error) {
+      console.error('Error inicializando cache:', error);
+    }
+  }
+
+  /**
+   * Obtiene una imagen del cache o la descarga si no existe
+   */
+  async function getCachedImage(url) {
+    if (!imageCache) return null;
+
+    try {
+      const cachedResponse = await imageCache.match(url);
+      if (cachedResponse) {
+        console.log(`Imagen cargada desde cache: ${url}`);
+        return cachedResponse;
+      }
+    } catch (error) {
+      console.error('Error obteniendo imagen del cache:', error);
+    }
+    return null;
+  }
+
+  /**
+   * Guarda una imagen en el cache
+   */
+  async function cacheImage(url, response) {
+    if (!imageCache) return;
+
+    try {
+      await imageCache.put(url, response.clone());
+      await manageCacheSize();
+    } catch (error) {
+      console.error('Error guardando imagen en cache:', error);
+    }
+  }
+
+  /**
+   * Gestión de tamaño del cache - elimina imágenes antiguas si excede el límite
+   */
+  async function manageCacheSize() {
+    if (!imageCache) return;
+
+    try {
+      const keys = await imageCache.keys();
+      if (keys.length > MAX_CACHE_SIZE) {
+        const deleteCount = keys.length - MAX_CACHE_SIZE;
+        console.log(`Limpiando cache: eliminando ${deleteCount} imágenes antiguas`);
+
+        for (let i = 0; i < deleteCount; i++) {
+          await imageCache.delete(keys[i]);
+        }
+      }
+    } catch (error) {
+      console.error('Error gestionando tamaño del cache:', error);
+    }
+  }
+
+  /**
+   * Precarga todas las imágenes para la animación
+   */
+  async function preloadAnimationImages(timestamps) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const totalImages = timestamps.length;
+        let loadedCount = 0;
+        let errorCount = 0;
+
+        // Mostrar barra de progreso
+        showPreloadProgress();
+
+        // Limpiar precarga anterior
+        clearPreloadedImages();
+
+        // Array de promesas para cargar todas las imágenes
+        const loadPromises = timestamps.map(async (timestamp, index) => {
+          const config = timestamp.radarConfig;
+          const imagePath = getImagePath(
+            config,
+            timestamp.year,
+            timestamp.julianDay,
+            timestamp.filename
+          );
+
+          const fullUrl = new URL(imagePath, window.location.origin).href;
+
+          try {
+            // Intentar obtener del cache primero
+            let response = await getCachedImage(fullUrl);
+
+            if (!response) {
+              // Si no está en cache, descargar
+              response = await fetch(fullUrl);
+              if (response.ok) {
+                await cacheImage(fullUrl, response);
+              } else {
+                throw new Error(`HTTP ${response.status}`);
+              }
+            }
+
+            // Crear objeto Image para precarga real en memoria
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+
+            await new Promise((resolveImg, rejectImg) => {
+              img.onload = () => {
+                preloadedImages.set(fullUrl, img);
+                loadedCount++;
+                updatePreloadProgress(loadedCount, totalImages, errorCount);
+                resolveImg();
+              };
+              img.onerror = () => {
+                errorCount++;
+                console.warn(`Error cargando imagen ${index + 1}/${totalImages}: ${imagePath}`);
+                updatePreloadProgress(loadedCount, totalImages, errorCount);
+                resolveImg(); // Continuar aunque falle
+              };
+              img.src = fullUrl;
+            });
+
+          } catch (error) {
+            errorCount++;
+            console.warn(`Error descargando imagen ${index + 1}/${totalImages}:`, error);
+            updatePreloadProgress(loadedCount, totalImages, errorCount);
+          }
+        });
+
+        // Esperar a que todas las imágenes se carguen
+        await Promise.all(loadPromises);
+
+        hidePreloadProgress();
+
+        if (loadedCount === 0) {
+          reject(new Error('No se pudo cargar ninguna imagen'));
+        } else {
+          console.log(`Precarga completa: ${loadedCount}/${totalImages} imágenes cargadas`);
+          if (errorCount > 0) {
+            showNotification(`Precarga completa: ${loadedCount} imágenes (${errorCount} errores)`, false);
+          } else {
+            showNotification(`${loadedCount} imágenes precargadas con éxito`);
+          }
+          resolve(loadedCount);
+        }
+
+      } catch (error) {
+        hidePreloadProgress();
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Muestra la barra de progreso de precarga
+   */
+  function showPreloadProgress() {
+    elements.preloadProgress.classList.add('active');
+    elements.preloadBar.style.width = '0%';
+    elements.preloadPercentage.textContent = '0%';
+    elements.preloadStatus.textContent = 'Precargando imágenes...';
+    elements.preloadDetails.textContent = '';
+  }
+
+  /**
+   * Actualiza la barra de progreso de precarga
+   */
+  function updatePreloadProgress(loaded, total, errors) {
+    const percentage = Math.round((loaded / total) * 100);
+    elements.preloadBar.style.width = `${percentage}%`;
+    elements.preloadPercentage.textContent = `${percentage}%`;
+    elements.preloadDetails.textContent = `${loaded}/${total} imágenes cargadas`;
+
+    if (errors > 0) {
+      elements.preloadDetails.textContent += ` (${errors} errores)`;
+    }
+  }
+
+  /**
+   * Oculta la barra de progreso de precarga
+   */
+  function hidePreloadProgress() {
+    setTimeout(() => {
+      elements.preloadProgress.classList.remove('active');
+    }, 1000);
+  }
+
+  /**
+   * Limpia las imágenes precargadas de la memoria
+   */
+  function clearPreloadedImages() {
+    console.log(`Limpiando ${preloadedImages.size} imágenes de la memoria`);
+    preloadedImages.clear();
+  }
+
+  /**
+   * Limpia el cache completo
+   */
+  async function clearCache() {
+    try {
+      if ('caches' in window) {
+        await caches.delete(CACHE_NAME);
+        imageCache = await caches.open(CACHE_NAME);
+        console.log('Cache limpiado y reiniciado');
+        showNotification('Cache limpiado exitosamente');
+      }
+    } catch (error) {
+      console.error('Error limpiando cache:', error);
+      showNotification('Error al limpiar el cache', true);
+    }
+  }
+
+  /**
+   * Obtiene estadísticas del cache
+   */
+  async function getCacheStats() {
+    if (!imageCache) return { count: 0, size: 0 };
+
+    try {
+      const keys = await imageCache.keys();
+      let totalSize = 0;
+
+      for (const request of keys) {
+        const response = await imageCache.match(request);
+        if (response) {
+          const blob = await response.blob();
+          totalSize += blob.size;
+        }
+      }
+
+      return {
+        count: keys.length,
+        size: (totalSize / (1024 * 1024)).toFixed(2) // MB
+      };
+    } catch (error) {
+      console.error('Error obteniendo estadísticas del cache:', error);
+      return { count: 0, size: 0 };
+    }
+  }
+
+  // ============================================================================
   // INICIALIZACIÓN
   // ============================================================================
 
@@ -188,6 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeMap();
     setupCollapsibleSections();
     setupMobileMenu();
+    initializeCache(); // Inicializar sistema de cache
     loadLatestImages(); // Optimized initial load: only the latest record
     setupEventListeners();
   }
@@ -1027,15 +1295,25 @@ document.addEventListener('DOMContentLoaded', () => {
           const success = await downloadAnimationData();
           if (!success) {
               // If download failed or not enough data, exit.
-              return; 
+              return;
           }
       }
-      
-      // 2. Setup and start animation
+
+      // 2. Precargar todas las imágenes antes de iniciar animación
+      const filteredTimestamps = getFilteredTimestamps();
+      try {
+        await preloadAnimationImages(filteredTimestamps);
+      } catch (error) {
+        console.error('Error en precarga de imágenes:', error);
+        showNotification('Error al precargar imágenes. La animación continuará.', true);
+      }
+
+      // 3. Setup and start animation
       setupAnimation();
       elements.toggleAnim.innerHTML = '<i class="fas fa-stop"></i><span>Desactivar animación</span>';
       elements.controls.classList.add('active');
       elements.timeline.classList.add('active');
+      elements.exportGif.style.display = 'flex'; // Mostrar botón de exportar GIF
       toggleAnimationPlay(); // Start playing automatically (4x by default)
 
     } else {
@@ -1043,9 +1321,13 @@ document.addEventListener('DOMContentLoaded', () => {
       stopAnimation();
       elements.controls.classList.remove('active');
       elements.timeline.classList.remove('active');
-      
+      elements.exportGif.style.display = 'none'; // Ocultar botón de exportar GIF
+
+      // Limpiar imágenes precargadas para liberar memoria
+      clearPreloadedImages();
+
       // Reload the latest capture in static mode
-      loadLatestImages(); 
+      loadLatestImages();
     }
   }
 
@@ -1261,6 +1543,192 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================================
+  // EXPORTACIÓN A GIF
+  // ============================================================================
+
+  /**
+   * Exporta la animación actual a un archivo GIF
+   */
+  async function exportAnimationToGIF() {
+    if (!isAnimationActive || allTimestamps.length === 0) {
+      showNotification('Debe activar la animación primero', true);
+      return;
+    }
+
+    try {
+      // Verificar que gif.js esté disponible
+      if (typeof GIF === 'undefined') {
+        showNotification('Error: Librería GIF.js no disponible', true);
+        return;
+      }
+
+      showLoader('Generando GIF... Esto puede tardar unos minutos');
+
+      const filteredTimestamps = getFilteredTimestamps();
+      const frameDelay = 500; // 500ms por frame (2 fps)
+
+      // Configurar gif.js
+      const gif = new GIF({
+        workers: 2,
+        quality: 10,
+        width: 800,
+        height: 600,
+        workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+      });
+
+      // Capturar cada frame del mapa
+      for (let i = 0; i < filteredTimestamps.length; i++) {
+        const timestamp = filteredTimestamps[i];
+
+        // Mostrar el frame
+        currentFrame = i;
+        showFrame(currentFrame);
+
+        // Esperar a que se renderice
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Capturar el canvas del mapa
+        try {
+          const canvas = await captureMapCanvas();
+          gif.addFrame(canvas, { delay: frameDelay });
+
+          // Actualizar progreso
+          elements.loaderText.textContent = `Generando GIF... Frame ${i + 1}/${filteredTimestamps.length}`;
+        } catch (error) {
+          console.error(`Error capturando frame ${i + 1}:`, error);
+        }
+      }
+
+      // Renderizar el GIF
+      gif.on('finished', function(blob) {
+        hideLoader();
+
+        // Crear URL de descarga
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+
+        // Nombre del archivo con fecha
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10);
+        const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '-');
+        a.download = `radar-animation-${dateStr}_${timeStr}.gif`;
+
+        // Descargar
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showNotification('GIF generado y descargado exitosamente');
+      });
+
+      gif.on('progress', function(progress) {
+        const percentage = Math.round(progress * 100);
+        elements.loaderText.textContent = `Renderizando GIF... ${percentage}%`;
+      });
+
+      gif.render();
+
+    } catch (error) {
+      hideLoader();
+      console.error('Error exportando a GIF:', error);
+      showNotification('Error al generar el GIF', true);
+    }
+  }
+
+  /**
+   * Captura el canvas del mapa actual
+   */
+  async function captureMapCanvas() {
+    return new Promise((resolve, reject) => {
+      try {
+        // Obtener el contenedor del mapa
+        const mapContainer = document.getElementById('map');
+
+        // Crear un canvas temporal
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 600;
+        const ctx = canvas.getContext('2d');
+
+        // Fondo blanco
+        ctx.fillStyle = '#f5f7fa';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Capturar tiles del mapa
+        const tiles = mapContainer.querySelectorAll('.leaflet-tile');
+        const overlays = mapContainer.querySelectorAll('.radar-image-layer img');
+
+        // Obtener bounds del mapa para calcular posiciones
+        const mapBounds = map.getBounds();
+        const mapSize = map.getSize();
+
+        // Dibujar tiles base
+        tiles.forEach(tile => {
+          if (tile.complete && tile.naturalHeight !== 0) {
+            const rect = tile.getBoundingClientRect();
+            const mapRect = mapContainer.getBoundingClientRect();
+
+            const x = (rect.left - mapRect.left) * (canvas.width / mapRect.width);
+            const y = (rect.top - mapRect.top) * (canvas.height / mapRect.height);
+            const w = rect.width * (canvas.width / mapRect.width);
+            const h = rect.height * (canvas.height / mapRect.height);
+
+            try {
+              ctx.drawImage(tile, x, y, w, h);
+            } catch (e) {
+              // Ignorar errores de CORS
+            }
+          }
+        });
+
+        // Dibujar overlays de radar
+        overlays.forEach(overlay => {
+          if (overlay.complete && overlay.naturalHeight !== 0) {
+            const rect = overlay.getBoundingClientRect();
+            const mapRect = mapContainer.getBoundingClientRect();
+
+            const x = (rect.left - mapRect.left) * (canvas.width / mapRect.width);
+            const y = (rect.top - mapRect.top) * (canvas.height / mapRect.height);
+            const w = rect.width * (canvas.width / mapRect.width);
+            const h = rect.height * (canvas.height / mapRect.height);
+
+            const parentOpacity = overlay.style.opacity || 1;
+            ctx.globalAlpha = parseFloat(parentOpacity);
+
+            try {
+              ctx.drawImage(overlay, x, y, w, h);
+            } catch (e) {
+              // Ignorar errores de CORS
+            }
+
+            ctx.globalAlpha = 1;
+          }
+        });
+
+        // Agregar marca de agua con timestamp
+        const currentTimestamp = getFilteredTimestamps()[currentFrame];
+        if (currentTimestamp) {
+          const timeStr = extractLocalTime(currentTimestamp.formatted_time || currentTimestamp.datetime_local);
+
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillRect(10, canvas.height - 40, 300, 30);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 16px Arial';
+          ctx.fillText(timeStr + ' LT', 20, canvas.height - 18);
+        }
+
+        resolve(canvas);
+
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  // ============================================================================
   // EVENT LISTENERS
   // ============================================================================
 
@@ -1324,6 +1792,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Animation toggle
     elements.toggleAnim.addEventListener('click', toggleAnimation);
+
+    // Export GIF
+    if (elements.exportGif) {
+      elements.exportGif.addEventListener('click', exportAnimationToGIF);
+    }
 
     // Animation controls
     elements.playBtn.addEventListener('click', toggleAnimationPlay);

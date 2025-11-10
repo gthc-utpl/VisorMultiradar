@@ -48,6 +48,16 @@
           <div class="loader-overlay" id="loader-overlay">
             <div class="loader-spinner"></div>
             <div class="loader-text" id="loader-text">Cargando datos de radares...</div>
+            <div class="preload-progress" id="preload-progress">
+              <div class="preload-bar-container">
+                <div class="preload-bar" id="preload-bar"></div>
+              </div>
+              <div class="preload-info">
+                <span id="preload-status">Precargando imágenes...</span>
+                <span id="preload-percentage">0%</span>
+              </div>
+              <div class="preload-details" id="preload-details"></div>
+            </div>
           </div>
           
           <div class="animation-timeline" id="animation-timeline">
@@ -105,7 +115,12 @@
             <i class="fas fa-film"></i>
             <span>Activar animación</span>
           </button>
-          
+
+          <button id="export-gif-btn" class="btn-secondary" style="display: none;">
+            <i class="fas fa-file-export"></i>
+            <span>Exportar GIF</span>
+          </button>
+
           <button id="refresh-button" class="btn-secondary">
             <i class="fas fa-sync-alt" id="refresh-icon"></i>
             <span>Actualizar</span>
@@ -275,8 +290,9 @@
   <footer>
     © 2025 Universidad Técnica Particular de Loja - Sistema Multi-Radar
   </footer>
-  
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
