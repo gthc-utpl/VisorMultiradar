@@ -624,6 +624,36 @@ body {
   height: 16px;
 }
 
+/* Control de ubicación del usuario */
+.user-location-control {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #dbe4f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-location-control label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1e478e;
+}
+
+.user-location-control input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.location-status {
+  font-size: 11px;
+  color: #666;
+}
+
 /* Estadísticas */
 #data-summary {
   font-size: 12px;
@@ -776,6 +806,29 @@ footer {
   transition: opacity 0.3s ease;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
+}
+
+/* Marcador de ubicación del usuario */
+.user-location-marker {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 28px;
+  z-index: 1001;
+  animation: pulse-user 2s infinite;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+@keyframes pulse-user {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.user-accuracy-circle {
+  fill: rgba(66, 133, 244, 0.2);
+  stroke: rgba(66, 133, 244, 0.6);
+  stroke-width: 2;
 }
 
 /* ============================================================================

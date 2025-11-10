@@ -51,6 +51,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentFrame = 0;
   let opacity = 0.7;
 
+  // Variables para ubicación del usuario
+  let userLocationMarker = null;
+  let userAccuracyCircle = null;
+  let showUserLocation = false;
+  let watchId = null;
+  let userPosition = null;
+
   // ============================================================================
   // ELEMENTOS DEL DOM
   // ============================================================================
@@ -88,6 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
     opacityValue: document.getElementById('opacity-value'),
     dataSummary: document.getElementById('data-summary'),
     toggleMarkers: document.getElementById('toggle-markers'),
+
+    // User location
+    toggleUserLocation: document.getElementById('toggle-user-location'),
+    locationStatus: document.getElementById('location-status'),
 
     // Mobile
     mobileMenuBtn: document.getElementById('mobile-menu-toggle'),
@@ -188,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeMap();
     setupCollapsibleSections();
     setupMobileMenu();
+    initUserLocation(); // Initialize user location status
     loadLatestImages(); // Optimized initial load: only the latest record
     setupEventListeners();
   }
@@ -1261,6 +1273,173 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================================
+  // GEOLOCALIZACIÓN DEL USUARIO
+  // ============================================================================
+
+  function initUserLocation() {
+    if (!navigator.geolocation) {
+      console.warn('Geolocalización no soportada por este navegador');
+      elements.locationStatus.innerHTML = '<span style="color: #F44336;">No disponible</span>';
+      elements.toggleUserLocation.disabled = true;
+      return;
+    }
+
+    elements.locationStatus.innerHTML = '<span style="color: #666;">Inactivo</span>';
+  }
+
+  function requestUserLocation() {
+    if (!navigator.geolocation) {
+      showNotification('Tu navegador no soporta geolocalización', true);
+      return;
+    }
+
+    elements.locationStatus.innerHTML = '<span style="color: #2196F3;">Obteniendo ubicación...</span>';
+
+    // Watch position para actualizaciones en tiempo real
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        userPosition = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy
+        };
+
+        updateUserLocationMarker(userPosition);
+        checkIfUserInRadarZone(userPosition);
+
+        elements.locationStatus.innerHTML = '<span style="color: #4CAF50;">✓ Activo</span>';
+      },
+      (error) => {
+        console.error('Error obteniendo ubicación:', error);
+        let errorMessage = 'Error al obtener ubicación';
+
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Permiso denegado';
+            showNotification('Por favor, permite el acceso a tu ubicación en la configuración del navegador', true);
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Ubicación no disponible';
+            showNotification('No se pudo determinar tu ubicación', true);
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Tiempo agotado';
+            showNotification('Tiempo de espera agotado al obtener ubicación', true);
+            break;
+        }
+
+        elements.locationStatus.innerHTML = `<span style="color: #F44336;">⚠️ ${errorMessage}</span>`;
+        elements.toggleUserLocation.checked = false;
+        showUserLocation = false;
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 30000,
+        timeout: 27000
+      }
+    );
+  }
+
+  function stopUserLocation() {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+
+    if (userLocationMarker) {
+      map.removeLayer(userLocationMarker);
+      userLocationMarker = null;
+    }
+
+    if (userAccuracyCircle) {
+      map.removeLayer(userAccuracyCircle);
+      userAccuracyCircle = null;
+    }
+
+    userPosition = null;
+    elements.locationStatus.innerHTML = '<span style="color: #666;">Inactivo</span>';
+  }
+
+  function updateUserLocationMarker(position) {
+    // Crear o actualizar círculo de precisión
+    if (userAccuracyCircle) {
+      map.removeLayer(userAccuracyCircle);
+    }
+
+    userAccuracyCircle = L.circle([position.lat, position.lng], {
+      radius: position.accuracy,
+      className: 'user-accuracy-circle',
+      fillOpacity: 0.2,
+      opacity: 0.6,
+      weight: 2
+    }).addTo(map);
+
+    // Crear popup content
+    const popupContent = `
+      <div class="radar-popup">
+        <h4>Tu ubicación</h4>
+        <p>Lat: ${position.lat.toFixed(5)}°</p>
+        <p>Lng: ${position.lng.toFixed(5)}°</p>
+        <p>Precisión: ±${Math.round(position.accuracy)}m</p>
+      </div>
+    `;
+
+    // Crear o actualizar marcador
+    if (userLocationMarker) {
+      userLocationMarker.setLatLng([position.lat, position.lng]);
+      userLocationMarker.setPopupContent(popupContent);
+    } else {
+      const markerHtml = '📍';
+
+      userLocationMarker = L.marker([position.lat, position.lng], {
+        icon: L.divIcon({
+          className: 'user-location-marker',
+          html: markerHtml,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        }),
+        zIndexOffset: 1000
+      }).addTo(map);
+
+      userLocationMarker.bindPopup(popupContent);
+    }
+  }
+
+  function checkIfUserInRadarZone(position) {
+    const userLatLng = L.latLng(position.lat, position.lng);
+    let isInZone = false;
+    let nearestRadar = null;
+    let minDistance = Infinity;
+
+    radarConfigs.forEach(config => {
+      const radarCenter = L.latLng(config.center[0], config.center[1]);
+      const distance = userLatLng.distanceTo(radarCenter);
+      const radiusMeters = config.radiusKm * 1000;
+
+      if (distance <= radiusMeters) {
+        isInZone = true;
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestRadar = config;
+        }
+      }
+    });
+
+    if (isInZone && nearestRadar) {
+      const distanceKm = (minDistance / 1000).toFixed(1);
+      console.log(`Usuario en zona de cobertura de ${nearestRadar.name} (${distanceKm} km)`);
+
+      // Centrar mapa en la ubicación del usuario si está en zona de radar
+      if (showUserLocation && userPosition) {
+        map.setView([position.lat, position.lng], 10, { animate: true });
+      }
+    } else {
+      console.log('Usuario fuera de zonas de cobertura de radares');
+      // Si no está en zona de radar, solo actualizar el marcador sin centrar
+    }
+  }
+
+  // ============================================================================
   // EVENT LISTENERS
   // ============================================================================
 
@@ -1319,6 +1498,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         });
+      });
+    }
+
+    // User location toggle
+    if (elements.toggleUserLocation) {
+      elements.toggleUserLocation.addEventListener('change', (e) => {
+        showUserLocation = e.target.checked;
+
+        if (showUserLocation) {
+          requestUserLocation();
+        } else {
+          stopUserLocation();
+        }
       });
     }
 
