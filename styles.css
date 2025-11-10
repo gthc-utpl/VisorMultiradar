@@ -1,0 +1,984 @@
+/* Reset y estilos base */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #f5f7fa;
+  color: #333;
+}
+
+/* ============================================================================
+   HEADER - Compacto
+   ============================================================================ */
+.header-top {
+  background-color: #0a1e3c;
+  color: #fff;
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.header-info {
+  font-size: 12px;
+  color: #a8c1e5;
+}
+
+/* ============================================================================
+   BARRA DE INFORMACIÓN - 1 línea compacta
+   ============================================================================ */
+.info-bar {
+  background-color: rgba(50, 50, 50, 0.95);
+  color: #fff;
+  padding: 8px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.info-bar-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.data-age-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 15px;
+}
+
+#data-age {
+  font-weight: bold;
+}
+
+.info-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #4CAF50;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.status-dot.error {
+  background-color: #F44336;
+  animation: none;
+}
+
+/* ============================================================================
+   CONTENEDOR PRINCIPAL
+   ============================================================================ */
+.main-container {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.content-wrapper {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ============================================================================
+   SECCIÓN DEL MAPA - Máxima prioridad de espacio
+   ============================================================================ */
+.map-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.map-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* ============================================================================
+   LOADER
+   ============================================================================ */
+.loader-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+
+.loader-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.loader-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(30, 71, 142, 0.2);
+  border-top: 5px solid #1e478e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loader-text {
+  font-size: 14px;
+  color: #1e478e;
+  font-weight: bold;
+}
+
+/* ============================================================================
+   TIMELINE DE ANIMACIÓN - Solo visible cuando está activa
+   ============================================================================ */
+.animation-timeline {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  right: 15px;
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 6px;
+  padding: 12px;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.animation-timeline.active {
+  display: flex;
+}
+
+.timeline-progress {
+  position: relative;
+  height: 10px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.timeline-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: #2196F3;
+  width: 0%;
+  transition: width 0.2s ease;
+}
+
+.timeline-pointer {
+  position: absolute;
+  top: -5px;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  background-color: #fff;
+  border-radius: 50%;
+  border: 3px solid #2196F3;
+  transform: translateX(-50%);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: left 0.2s ease;
+}
+
+.timeline-ticks {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #fff;
+  height: 16px;
+}
+
+.timeline-tick {
+  position: absolute;
+  white-space: nowrap;
+  font-size: 11px;
+  color: #fff;
+  transform: translateX(-50%);
+  user-select: none;
+}
+
+/* ============================================================================
+   CONTROLES DE ANIMACIÓN - Solo visibles cuando está activa
+   ============================================================================ */
+.animation-controls {
+  display: none;
+  padding: 12px 15px;
+  background-color: #f0f5ff;
+  border-top: 1px solid #dbe4f0;
+  align-items: center;
+  gap: 20px;
+}
+
+.animation-controls.active {
+  display: flex;
+}
+
+.animation-period,
+.animation-speed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.animation-period label,
+.animation-speed label {
+  font-weight: 500;
+  color: #1e478e;
+}
+
+.animation-period select,
+.animation-speed select {
+  padding: 6px 10px;
+  border: 1px solid #dbe4f0;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.animation-period select:focus,
+.animation-speed select:focus {
+  border-color: #1e478e;
+}
+
+.animation-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  justify-content: center;
+}
+
+.animation-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #dbe4f0;
+  background-color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.animation-button:hover {
+  background-color: #f5f7fa;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.animation-button:active {
+  transform: translateY(0);
+}
+
+.animation-button i {
+  font-size: 14px;
+  color: #1e478e;
+}
+
+.animation-play-btn {
+  width: 50px;
+  height: 50px;
+  background-color: #1e478e;
+  border: none;
+}
+
+.animation-play-btn i {
+  color: #fff;
+  font-size: 18px;
+}
+
+.animation-play-btn:hover {
+  background-color: #15376e;
+}
+
+/* ============================================================================
+   BARRA DE CONTROL INFERIOR
+   ============================================================================ */
+.control-bar {
+  display: flex;
+  padding: 12px 15px;
+  gap: 12px;
+  background-color: rgba(50, 50, 50, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background-color: #1e478e;
+  color: #fff;
+  flex: 1;
+}
+
+.btn-primary:hover {
+  background-color: #15376e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary {
+  background-color: #2196F3;
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background-color: #1976D2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#refresh-icon.fa-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================================================
+   SIDEBAR - SIEMPRE VISIBLE con leyenda
+   ============================================================================ */
+.sidebar {
+  width: 280px;
+  background-color: #f0f5ff;
+  border-left: 1px solid #dbe4f0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-section {
+  border-bottom: 1px solid #dbe4f0;
+}
+
+/* Leyenda - SIEMPRE VISIBLE */
+.sidebar-legend {
+  padding: 15px;
+}
+
+.sidebar-legend h3 {
+  font-size: 14px;
+  color: #0a1e3c;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.legend-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-label {
+  font-size: 12px;
+  color: #333;
+}
+
+/* Secciones colapsables */
+.sidebar-section.collapsible .section-header {
+  padding: 12px 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  background-color: rgba(255, 255, 255, 0.5);
+  transition: background-color 0.2s;
+}
+
+.sidebar-section.collapsible .section-header:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.sidebar-section.collapsible .section-header h3 {
+  font-size: 13px;
+  color: #1e478e;
+  font-weight: 600;
+}
+
+.toggle-icon {
+  font-size: 12px;
+  color: #1e478e;
+  transition: transform 0.3s;
+}
+
+.sidebar-section.collapsible .section-header.expanded .toggle-icon {
+  transform: rotate(180deg);
+}
+
+.section-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.section-content.collapsed {
+  max-height: 0;
+}
+
+.section-content.expanded {
+  max-height: 600px;
+}
+
+.section-content > div {
+  padding: 15px;
+}
+
+/* Control de radares */
+.radar-config {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.radar-config-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+}
+
+.radar-config-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.radar-config-item input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.radar-status {
+  font-size: 11px;
+  color: #666;
+}
+
+.opacity-control {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.opacity-control label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1e478e;
+}
+
+.opacity-slider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #ddd;
+  outline: none;
+  border-radius: 3px;
+}
+
+.opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #1e478e;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.opacity-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.opacity-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #1e478e;
+  cursor: pointer;
+  border: none;
+}
+
+#opacity-value {
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: #1e478e;
+}
+
+/* Control de marcadores */
+.markers-control {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #dbe4f0;
+}
+
+.markers-control label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1e478e;
+}
+
+.markers-control input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+/* Estadísticas */
+#data-summary {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.stats-row {
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.stats-total {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #dbe4f0;
+  font-weight: bold;
+  color: #1e478e;
+}
+
+/* Información técnica */
+.tech-info-content h4 {
+  font-size: 13px;
+  color: #1e478e;
+  margin: 12px 0 8px 0;
+  font-weight: 600;
+}
+
+.tech-info-content h4:first-child {
+  margin-top: 0;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.info-label {
+  color: #666;
+}
+
+.info-value {
+  font-weight: 500;
+  color: #1e478e;
+}
+
+/* ============================================================================
+   BOTÓN FLOTANTE PARA MÓVILES
+   ============================================================================ */
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  /* 🌟 Ajuste: Bajar 70px para estar encima del control-bar (50px de altura + padding) */
+  bottom: 80px; 
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #1e478e;
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  z-index: 1500;
+  transition: all 0.3s;
+  font-size: 20px;
+}
+
+.mobile-menu-btn:active {
+  transform: scale(0.95);
+}
+
+.mobile-menu-btn.active {
+  background-color: #F44336;
+}
+
+.mobile-menu-btn.active i::before {
+  content: "\f00d"; /* Icono de X (times) */
+}
+
+/* Overlay oscuro para móviles */
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1300;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.mobile-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+/* ============================================================================
+   NOTIFICACIONES
+   ============================================================================ */
+.notification {
+  position: fixed;
+  /* 🌟 Ajuste: Subir también las notificaciones para que no las cubra la barra inferior */
+  bottom: 150px; 
+  right: 20px;
+  background-color: #4CAF50;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: opacity 0.3s, transform 0.3s;
+  font-size: 14px;
+  max-width: 300px;
+}
+
+.notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.notification.error {
+  background-color: #F44336;
+}
+
+/* ============================================================================
+   FOOTER
+   ============================================================================ */
+footer {
+  background-color: #0a1e3c;
+  color: #a8c1e5;
+  text-align: center;
+  padding: 8px;
+  font-size: 11px;
+}
+
+/* ============================================================================
+   ESTILOS LEAFLET
+   ============================================================================ */
+.leaflet-popup-content-wrapper {
+  border-radius: 6px;
+}
+
+.radar-image-layer {
+  transition: opacity 0.3s ease;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* ============================================================================
+   RESPONSIVE - TABLETS (768px y menores)
+   ============================================================================ */
+@media (max-width: 768px) {
+  /* Mostrar botón flotante */
+  .mobile-menu-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* 🌟 Altura fija para evitar que la barra de control inferior lo cubra */
+    bottom: 90px; 
+  }
+  
+  /* Header más compacto */
+  .header-top {
+    padding: 8px 12px;
+  }
+  
+  .header-title {
+    font-size: 13px;
+  }
+  
+  .header-info {
+    font-size: 10px;
+  }
+  
+  /* Info bar compacta */
+  .info-bar {
+    font-size: 11px;
+    padding: 6px 12px;
+    flex-wrap: wrap;
+  }
+  
+  .data-age-info {
+    margin-left: 8px;
+  }
+  
+  /* Mapa a pantalla completa */
+  .content-wrapper {
+    flex-direction: column;
+  }
+  
+  .map-section {
+    flex: 1;
+  }
+  
+  /* Sidebar oculto por defecto en móvil */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 85%;
+    max-width: 320px;
+    height: 100vh;
+    z-index: 1400;
+    border-left: 1px solid #dbe4f0;
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.3);
+    transition: right 0.3s ease;
+    overflow-y: auto;
+  }
+  
+  .sidebar.mobile-visible {
+    right: 0;
+  }
+  
+  /* Controles de animación más compactos */
+  .animation-controls {
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  
+  .animation-period,
+  .animation-speed {
+    width: calc(50% - 4px);
+    font-size: 11px;
+  }
+  
+  .animation-period select,
+  .animation-speed select {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+  
+  .animation-buttons {
+    width: 100%;
+    order: -1;
+    margin-bottom: 6px;
+    gap: 6px;
+  }
+  
+  .animation-button {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .animation-play-btn {
+    width: 44px;
+    height: 44px;
+  }
+  
+  /* Barra de control compacta */
+  .control-bar {
+    flex-direction: row;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  
+  /* Timeline más pequeño */
+  .animation-timeline {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    padding: 8px;
+  }
+  
+  .timeline-tick {
+    font-size: 9px;
+  }
+  
+  /* Notificación reposicionada */
+  .notification {
+    /* 🌟 Asegurar que esté encima de mobile-menu-btn */
+    bottom: 150px; 
+    right: 15px;
+    max-width: 250px;
+    font-size: 12px;
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE - MÓVILES (480px y menores)
+   ============================================================================ */
+@media (max-width: 480px) {
+  .header-title {
+    font-size: 12px;
+  }
+  
+  .info-bar {
+    font-size: 10px;
+  }
+  
+  .mobile-menu-btn {
+    width: 50px;
+    height: 50px;
+    /* 🌟 Ajuste más alto para móvil pequeño */
+    bottom: 90px;
+    font-size: 18px;
+  }
+  
+  .sidebar {
+    width: 90%;
+  }
+  
+  .animation-period,
+  .animation-speed {
+    width: 100%;
+  }
+  
+  .animation-buttons {
+    gap: 4px;
+  }
+  
+  .animation-button {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .animation-play-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .animation-button i {
+    font-size: 11px;
+  }
+  
+  .animation-play-btn i {
+    font-size: 14px;
+  }
+  
+  .control-bar {
+    padding: 6px 10px;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+  
+  .notification {
+    /* 🌟 Ajuste para móvil pequeño */
+    bottom: 120px; 
+    right: 10px;
+    max-width: calc(100% - 80px);
+  }
+}

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema Multi-Radar - GUAXX y LOXX</title>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <h1 class="header-title">Sistema Multi-Radar Meteorológico</h1>
+      <div class="header-info">Actualización cada 5 minutos</div>
+    </div>
+  </header>
+
+  <div class="info-bar">
+    <div class="info-bar-content">
+      <i class="fas fa-satellite-dish"></i>
+      <span>Última captura:</span>
+      <span id="capture-time">Cargando...</span>
+      <span class="data-age-info">
+        <i class="fas fa-clock"></i>
+        <span id="data-age">-- min</span>
+      </span>
+    </div>
+    <div class="info-bar-actions">
+      <span class="status-indicator">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Iniciando...</span>
+      </span>
+    </div>
+  </div>
+
+  <button id="mobile-menu-toggle" class="mobile-menu-btn">
+    <i class="fas fa-bars"></i>
+  </button>
+
+  <main class="main-container">
+    <div class="content-wrapper">
+      
+      <section class="map-section">
+        <div class="map-container">
+          
+          <div class="loader-overlay" id="loader-overlay">
+            <div class="loader-spinner"></div>
+            <div class="loader-text" id="loader-text">Cargando datos de radares...</div>
+          </div>
+          
+          <div class="animation-timeline" id="animation-timeline">
+            <div class="timeline-progress">
+              <div class="timeline-bar" id="timeline-bar"></div>
+              <div class="timeline-pointer" id="timeline-pointer"></div>
+            </div>
+            <div class="timeline-ticks" id="timeline-ticks"></div>
+          </div>
+          
+          <div id="map"></div>
+        </div>
+        
+        <div class="animation-controls" id="animation-controls">
+          <div class="animation-period">
+            <label>Período:</label>
+            <select id="animation-period-select">
+              <option value="1">Última hora</option>
+              <option value="2">Últimas 2 horas</option>
+              <option value="4" selected>Últimas 4 horas</option>
+            </select>
+          </div>
+          
+          <div class="animation-buttons">
+            <button id="animation-first" class="animation-button" title="Primer frame">
+              <i class="fas fa-step-backward"></i>
+            </button>
+            <button id="animation-prev" class="animation-button" title="Frame anterior">
+              <i class="fas fa-backward"></i>
+            </button>
+            <button id="animation-play" class="animation-button animation-play-btn" title="Reproducir/Pausar">
+              <i class="fas fa-play"></i>
+            </button>
+            <button id="animation-next" class="animation-button" title="Frame siguiente">
+              <i class="fas fa-forward"></i>
+            </button>
+            <button id="animation-last" class="animation-button" title="Último frame">
+              <i class="fas fa-step-forward"></i>
+            </button>
+          </div>
+          
+          <div class="animation-speed">
+            <label>Velocidad:</label>
+            <select id="animation-speed-select">
+              <option value="0.5">0.5x</option>
+              <option value="1">1x</option>
+              <option value="2">2x</option>
+              <option value="4" selected>4x</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="control-bar">
+          <button id="toggle-animation-btn" class="btn-primary">
+            <i class="fas fa-film"></i>
+            <span>Activar animación</span>
+          </button>
+          
+          <button id="refresh-button" class="btn-secondary">
+            <i class="fas fa-sync-alt" id="refresh-icon"></i>
+            <span>Actualizar</span>
+          </button>
+        </div>
+      </section>
+      
+      <aside class="sidebar">
+        
+        <div class="sidebar-section sidebar-legend">
+          <h3>Leyenda de Intensidad (dBZ)</h3>
+          <div class="legend-content">
+            <div class="legend-item">
+              <div class="color-box" style="background-color: transparent; border: 1px dashed #999;"></div>
+              <span class="legend-label">Sin señal</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: #B4E6FF;"></div>
+              <span class="legend-label">0-8 dBZ (Muy ligera)</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: #64B4FF;"></div>
+              <span class="legend-label">8-16 dBZ (Ligera)</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: #0000FF;"></div>
+              <span class="legend-label">16-24 dBZ (Moderada baja)</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: #0080FF;"></div>
+              <span class="legend-label">24-32 dBZ (Moderada)</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: #00FF00;"></div>
+              <span class="legend-label">32-40 dBZ (Moderada-fuerte)</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: #80FF00;"></div>
+              <span class="legend-label">40-48 dBZ (Fuerte)</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: #FFFF00;"></div>
+              <span class="legend-label">48-56 dBZ (Muy fuerte)</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: #FFA500;"></div>
+              <span class="legend-label">56-64 dBZ (Intensa)</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: #FF0000;"></div>
+              <span class="legend-label">64-72 dBZ (Muy intensa)</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: #FF00FF;"></div>
+              <span class="legend-label">> 72 dBZ (Extrema/granizo)</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="sidebar-section collapsible">
+          <div class="section-header" data-target="radar-config">
+            <h3>Control de Radares</h3>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="section-content collapsed" id="radar-config">
+            <div class="radar-config">
+              <div class="radar-config-item">
+                <label>
+                  <input type="checkbox" class="radar-toggle" data-radar="guaxx" checked>
+                  <span>🟠 Radar GUAXX</span>
+                </label>
+                <span class="radar-status" id="guaxx-status">...</span>
+              </div>
+              <div class="radar-config-item">
+                <label>
+                  <input type="checkbox" class="radar-toggle" data-radar="loxx" checked>
+                  <span>🔵 Radar LOXX</span>
+                </label>
+                <span class="radar-status" id="loxx-status">...</span>
+              </div>
+              
+              <div class="opacity-control">
+                <label for="overlay-opacity">Opacidad:</label>
+                <input type="range" id="overlay-opacity" min="0" max="100" value="70" class="opacity-slider">
+                <span id="opacity-value">70%</span>
+              </div>
+              
+              <div class="markers-control">
+                <label>
+                  <input type="checkbox" id="toggle-markers">
+                  <span>Mostrar íconos de radares</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="sidebar-section collapsible">
+          <div class="section-header" data-target="stats-section">
+            <h3>Estadísticas de Datos</h3>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="section-content collapsed" id="stats-section">
+            <div id="data-summary"></div>
+          </div>
+        </div>
+        
+        <div class="sidebar-section collapsible">
+          <div class="section-header" data-target="tech-info">
+            <h3>Información Técnica</h3>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="section-content collapsed" id="tech-info">
+            <div class="tech-info-content">
+              <h4>Radar GUAXX</h4>
+              <div class="info-item">
+                <span class="info-label">Cobertura:</span>
+                <span class="info-value">100 km</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Ubicación:</span>
+                <span class="info-value">Celica</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Coordenadas:</span>
+                <span class="info-value">-4.036°, -79.872°</span>
+              </div>
+              
+              <h4>Radar LOXX</h4>
+              <div class="info-item">
+                <span class="info-label">Cobertura:</span>
+                <span class="info-value">70 km</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Ubicación:</span>
+                <span class="info-value">Loja</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Coordenadas:</span>
+                <span class="info-value">-3.987°, -79.144°</span>
+              </div>
+              
+              <h4>Características</h4>
+              <div class="info-item">
+                <span class="info-label">Resolución:</span>
+                <span class="info-value">~1 km/px</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Actualización:</span>
+                <span class="info-value">Cada 5 min</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Zona horaria:</span>
+                <span class="info-value">UTC-5 (Ecuador)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </aside>
+      
+    </div>
+  </main>
+
+  <div class="notification" id="notification"></div>
+  
+  <footer>
+    © 2025 Universidad Técnica Particular de Loja - Sistema Multi-Radar
+  </footer>
+  
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
