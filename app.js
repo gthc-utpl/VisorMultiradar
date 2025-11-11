@@ -109,9 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dataSummary: document.getElementById('data-summary'),
     toggleMarkers: document.getElementById('toggle-markers'),
 
-    // User location
-    toggleUserLocation: document.getElementById('toggle-user-location'),
-    locationStatus: document.getElementById('location-status'),
+    // User location (ahora manejado solo por el diálogo)
 
     // Mobile
     mobileMenuBtn: document.getElementById('mobile-menu-toggle'),
@@ -464,6 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addCustomStyles();
     initializeMap();
     setupCollapsibleSections();
+    setupDraggableWindows(); // Hacer ventanas flotantes movibles
     setupMobileMenu();
     initUserLocation(); // Initialize user location status
     initializeCache(); // Inicializar sistema de cache
@@ -602,8 +601,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Set OSM as the default layer and add it to the map
     osmLayer.addTo(map);
 
-    // 4. Add the Layer Control
-    L.control.layers(baseLayers, null, { collapsed: true }).addTo(map);
+    // 4. Add the Layer Control (positioned on the left)
+    L.control.layers(baseLayers, null, { collapsed: true, position: 'topleft' }).addTo(map);
 
 
     radarConfigs.forEach(config => {
@@ -685,11 +684,126 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
-    
+
     // Open the radar control section by default
     const radarConfigHeader = document.querySelector('.section-header[data-target="radar-config"]');
     if (radarConfigHeader) {
         radarConfigHeader.click();
+    }
+  }
+
+  // ============================================================================
+  // FUNCIONALIDAD PARA VENTANAS FLOTANTES MOVIBLES
+  // ============================================================================
+
+  function makeDraggable(element, handle) {
+    let isDragging = false;
+    let currentX;
+    let currentY;
+    let initialX;
+    let initialY;
+    let xOffset = 0;
+    let yOffset = 0;
+
+    // Obtener posición inicial desde CSS
+    const computedStyle = window.getComputedStyle(element);
+    const initialTop = parseInt(computedStyle.top) || 0;
+    const initialLeft = parseInt(computedStyle.left) || 0;
+    const initialRight = parseInt(computedStyle.right) || 0;
+    const initialBottom = parseInt(computedStyle.bottom) || 0;
+
+    // Si tiene right, convertir a left
+    if (computedStyle.right !== 'auto' && computedStyle.left === 'auto') {
+      const rect = element.getBoundingClientRect();
+      element.style.left = rect.left + 'px';
+      element.style.right = 'auto';
+    }
+
+    // Si tiene bottom, convertir a top
+    if (computedStyle.bottom !== 'auto' && computedStyle.top === 'auto') {
+      const rect = element.getBoundingClientRect();
+      element.style.top = rect.top + 'px';
+      element.style.bottom = 'auto';
+    }
+
+    handle.addEventListener('mousedown', dragStart);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', dragEnd);
+
+    // Touch events para móviles
+    handle.addEventListener('touchstart', dragStart);
+    document.addEventListener('touchmove', drag);
+    document.addEventListener('touchend', dragEnd);
+
+    function dragStart(e) {
+      if (e.type === 'touchstart') {
+        initialX = e.touches[0].clientX - xOffset;
+        initialY = e.touches[0].clientY - yOffset;
+      } else {
+        initialX = e.clientX - xOffset;
+        initialY = e.clientY - yOffset;
+      }
+
+      if (e.target === handle || handle.contains(e.target)) {
+        isDragging = true;
+        element.style.zIndex = 1000; // Traer al frente mientras se arrastra
+      }
+    }
+
+    function drag(e) {
+      if (isDragging) {
+        e.preventDefault();
+
+        if (e.type === 'touchmove') {
+          currentX = e.touches[0].clientX - initialX;
+          currentY = e.touches[0].clientY - initialY;
+        } else {
+          currentX = e.clientX - initialX;
+          currentY = e.clientY - initialY;
+        }
+
+        xOffset = currentX;
+        yOffset = currentY;
+
+        // Limitar el movimiento dentro de la ventana
+        const rect = element.getBoundingClientRect();
+        const maxX = window.innerWidth - rect.width;
+        const maxY = window.innerHeight - rect.height;
+
+        const boundedX = Math.max(0, Math.min(currentX + parseInt(element.style.left || 0), maxX));
+        const boundedY = Math.max(0, Math.min(currentY + parseInt(element.style.top || 0), maxY));
+
+        setTranslate(boundedX, boundedY, element);
+      }
+    }
+
+    function dragEnd(e) {
+      if (isDragging) {
+        initialX = currentX;
+        initialY = currentY;
+        isDragging = false;
+        element.style.zIndex = 900; // Restaurar z-index original
+      }
+    }
+
+    function setTranslate(xPos, yPos, el) {
+      el.style.left = xPos + 'px';
+      el.style.top = yPos + 'px';
+    }
+  }
+
+  function setupDraggableWindows() {
+    // Hacer movible el panel de animación
+    const animationPanel = document.getElementById('animation-panel');
+    const animationHeader = animationPanel?.querySelector('.animation-panel-header');
+    if (animationPanel && animationHeader) {
+      makeDraggable(animationPanel, animationHeader);
+    }
+
+    // Hacer movible la ventana de colores
+    const colorLegendWindow = document.getElementById('color-legend-window');
+    if (colorLegendWindow) {
+      makeDraggable(colorLegendWindow, colorLegendWindow);
     }
   }
 
@@ -1579,12 +1693,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function initUserLocation() {
     if (!navigator.geolocation) {
       console.warn('Geolocalización no soportada por este navegador');
-      elements.locationStatus.innerHTML = '<span style="color: #F44336;">No disponible</span>';
-      elements.toggleUserLocation.disabled = true;
       return;
     }
-
-    elements.locationStatus.innerHTML = '<span style="color: #666;">Inactivo</span>';
 
     // Solicitar automáticamente la ubicación al usuario después de cargar el mapa
     setTimeout(() => {
@@ -1601,7 +1711,6 @@ document.addEventListener('DOMContentLoaded', () => {
       navigator.permissions.query({ name: 'geolocation' }).then((result) => {
         if (result.state === 'granted') {
           // Si ya está autorizado, activar automáticamente
-          elements.toggleUserLocation.checked = true;
           showUserLocation = true;
           requestUserLocation();
         } else if (result.state === 'prompt') {
@@ -1650,7 +1759,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const declineBtn = dialog.querySelector('.btn-prompt-decline');
 
     acceptBtn.addEventListener('click', () => {
-      elements.toggleUserLocation.checked = true;
       showUserLocation = true;
       requestUserLocation();
       closePromptDialog(dialog);
@@ -1684,8 +1792,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    elements.locationStatus.innerHTML = '<span style="color: #2196F3;">Obteniendo ubicación...</span>';
-
     // Watch position para actualizaciones en tiempo real
     watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -1697,8 +1803,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateUserLocationMarker(userPosition);
         checkIfUserInRadarZone(userPosition);
-
-        elements.locationStatus.innerHTML = '<span style="color: #4CAF50;">✓ Activo</span>';
       },
       (error) => {
         console.error('Error obteniendo ubicación:', error);
@@ -1719,8 +1823,6 @@ document.addEventListener('DOMContentLoaded', () => {
             break;
         }
 
-        elements.locationStatus.innerHTML = `<span style="color: #F44336;">⚠️ ${errorMessage}</span>`;
-        elements.toggleUserLocation.checked = false;
         showUserLocation = false;
       },
       {
@@ -1748,7 +1850,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     userPosition = null;
-    elements.locationStatus.innerHTML = '<span style="color: #666;">Inactivo</span>';
   }
 
   function updateUserLocationMarker(position) {
@@ -2163,29 +2264,35 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // User location toggle
-    if (elements.toggleUserLocation) {
-      elements.toggleUserLocation.addEventListener('change', (e) => {
-        showUserLocation = e.target.checked;
-
-        if (showUserLocation) {
-          requestUserLocation();
-        } else {
-          stopUserLocation();
-        }
-      });
-    }
+    // User location ahora se maneja solo mediante el diálogo de permisos
 
     // Animation toggle
     elements.toggleAnim.addEventListener('click', toggleAnimation);
 
-    // Info panel toggle
+    // Info panel toggle con auto-ocultado
     const infoPanelToggle = document.getElementById('info-panel-toggle');
     const infoPanel = document.getElementById('info-panel');
     if (infoPanelToggle && infoPanel) {
-      infoPanelToggle.addEventListener('click', () => {
+      infoPanelToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
         infoPanel.classList.toggle('visible');
         infoPanelToggle.classList.toggle('active');
+      });
+
+      // Auto-ocultar cuando se hace clic fuera del panel
+      document.addEventListener('click', (e) => {
+        if (infoPanel.classList.contains('visible')) {
+          // Si el clic no fue en el panel ni en el botón
+          if (!infoPanel.contains(e.target) && !infoPanelToggle.contains(e.target)) {
+            infoPanel.classList.remove('visible');
+            infoPanelToggle.classList.remove('active');
+          }
+        }
+      });
+
+      // Evitar que los clics dentro del panel cierren el panel
+      infoPanel.addEventListener('click', (e) => {
+        e.stopPropagation();
       });
     }
 

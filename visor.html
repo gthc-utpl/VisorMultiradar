@@ -35,9 +35,9 @@
     </div>
   </div>
 
-  <!-- Botón para mostrar panel de información -->
+  <!-- Botón para mostrar panel de configuración -->
   <button id="info-panel-toggle" class="info-panel-btn">
-    <i class="fas fa-info-circle"></i>
+    <i class="fas fa-cog"></i>
   </button>
 
   <main class="main-container">
@@ -110,15 +110,68 @@
                   <option value="4" selected>4x</option>
                 </select>
               </div>
+
+              <!-- Línea de tiempo integrada en el panel -->
+              <div class="animation-timeline-integrated" id="animation-timeline">
+                <div class="timeline-progress">
+                  <div class="timeline-bar" id="timeline-bar"></div>
+                  <div class="timeline-pointer" id="timeline-pointer"></div>
+                </div>
+                <div class="timeline-ticks" id="timeline-ticks"></div>
+              </div>
             </div>
           </div>
 
-          <div class="animation-timeline" id="animation-timeline">
-            <div class="timeline-progress">
-              <div class="timeline-bar" id="timeline-bar"></div>
-              <div class="timeline-pointer" id="timeline-pointer"></div>
+          <!-- Ventana flotante de rango de colores (siempre visible) -->
+          <div class="color-legend-window" id="color-legend-window">
+            <div class="color-legend-header">
+              <h4>Intensidad (dBZ)</h4>
+              <div class="drag-handle" title="Arrastrar para mover">
+                <i class="fas fa-grip-vertical"></i>
+              </div>
             </div>
-            <div class="timeline-ticks" id="timeline-ticks"></div>
+            <div class="color-legend-content-compact">
+              <div class="legend-item-compact">
+                <div class="color-box-compact" style="background-color: #B4E6FF;"></div>
+                <span>0-8</span>
+              </div>
+              <div class="legend-item-compact">
+                <div class="color-box-compact" style="background-color: #64B4FF;"></div>
+                <span>8-16</span>
+              </div>
+              <div class="legend-item-compact">
+                <div class="color-box-compact" style="background-color: #0000FF;"></div>
+                <span>16-24</span>
+              </div>
+              <div class="legend-item-compact">
+                <div class="color-box-compact" style="background-color: #0080FF;"></div>
+                <span>24-32</span>
+              </div>
+              <div class="legend-item-compact">
+                <div class="color-box-compact" style="background-color: #00FF00;"></div>
+                <span>32-40</span>
+              </div>
+              <div class="legend-item-compact">
+                <div class="color-box-compact" style="background-color: #80FF00;"></div>
+                <span>40-48</span>
+              </div>
+              <div class="legend-item-compact">
+                <div class="color-box-compact" style="background-color: #FFFF00;"></div>
+                <span>48-56</span>
+              </div>
+              <div class="legend-item-compact">
+                <div class="color-box-compact" style="background-color: #FFA500;"></div>
+                <span>56-64</span>
+              </div>
+              <div class="legend-item-compact">
+                <div class="color-box-compact" style="background-color: #FF0000;"></div>
+                <span>64-72</span>
+              </div>
+              <div class="legend-item-compact">
+                <div class="color-box-compact" style="background-color: #FF00FF;"></div>
+                <span>> 72</span>
+              </div>
+            </div>
           </div>
 
           <div id="map"></div>
@@ -223,14 +276,6 @@
                   <input type="checkbox" id="toggle-markers">
                   <span>Mostrar íconos de radares</span>
                 </label>
-              </div>
-
-              <div class="user-location-control">
-                <label>
-                  <input type="checkbox" id="toggle-user-location">
-                  <span>📍 Mostrar mi ubicación</span>
-                </label>
-                <span class="location-status" id="location-status">...</span>
               </div>
             </div>
           </div>

@@ -264,39 +264,15 @@ body {
 }
 
 /* ============================================================================
-   TIMELINE DE ANIMACIÓN - Solo visible cuando está activa
+   TIMELINE DE ANIMACIÓN - Integrada en el panel
    ============================================================================ */
-.animation-timeline {
-  position: absolute;
-  bottom: 15px;
-  left: 15px;
-  right: 15px;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(30, 30, 30, 0.9) 100%);
-  border-radius: 10px;
-  padding: 15px;
-  display: none;
+.animation-timeline-integrated {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 2px solid rgba(30, 71, 142, 0.2);
+  display: flex;
   flex-direction: column;
   gap: 10px;
-  z-index: 500;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-}
-
-.animation-timeline.active {
-  display: flex;
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .timeline-progress {
@@ -369,7 +345,75 @@ body {
 }
 
 /* ============================================================================
-   PANEL DE ANIMACIÓN FLOTANTE (Superior derecha)
+   VENTANA FLOTANTE DE RANGO DE COLORES (Inferior izquierda, movible)
+   ============================================================================ */
+.color-legend-window {
+  position: absolute;
+  bottom: 80px;
+  left: 15px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 245, 255, 0.98) 100%);
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  z-index: 900;
+  border: 2px solid rgba(30, 71, 142, 0.3);
+  backdrop-filter: blur(10px);
+  max-width: 180px;
+  cursor: move;
+  user-select: none;
+}
+
+.color-legend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(30, 71, 142, 0.2);
+  margin-bottom: 8px;
+}
+
+.color-legend-header h4 {
+  font-size: 12px;
+  color: #1e478e;
+  margin: 0;
+  font-weight: 600;
+}
+
+.drag-handle {
+  color: #1e478e;
+  cursor: grab;
+  font-size: 12px;
+  padding: 2px 4px;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.color-legend-content-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.legend-item-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #333;
+}
+
+.color-box-compact {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================================
+   PANEL DE ANIMACIÓN FLOTANTE (Superior derecha, movible)
    ============================================================================ */
 .animation-panel {
   position: absolute;
@@ -386,6 +430,7 @@ body {
   max-width: 320px;
   border: 2px solid rgba(30, 71, 142, 0.3);
   backdrop-filter: blur(10px);
+  user-select: none;
 }
 
 .animation-panel.active {
@@ -410,6 +455,11 @@ body {
   align-items: center;
   padding-bottom: 10px;
   border-bottom: 2px solid rgba(30, 71, 142, 0.2);
+  cursor: move;
+}
+
+.animation-panel-header:active {
+  cursor: grabbing;
 }
 
 .animation-panel-header h3 {
