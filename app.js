@@ -855,10 +855,29 @@ document.addEventListener('DOMContentLoaded', () => {
       makeDraggable(animationPanel, animationHeader);
     }
 
-    // Hacer movible la ventana de colores
+    // Hacer movible la ventana de colores (usando solo el header como handle)
     const colorLegendWindow = document.getElementById('color-legend-window');
-    if (colorLegendWindow) {
-      makeDraggable(colorLegendWindow, colorLegendWindow);
+    const colorLegendHeader = colorLegendWindow?.querySelector('.color-legend-header');
+    if (colorLegendWindow && colorLegendHeader) {
+      makeDraggable(colorLegendWindow, colorLegendHeader);
+    }
+
+    // Botón de minimizar panel de animación
+    const animationMinimizeBtn = document.getElementById('animation-minimize-btn');
+    if (animationMinimizeBtn && animationPanel) {
+      animationMinimizeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        animationPanel.classList.toggle('minimized');
+      });
+    }
+
+    // Botón de minimizar ventana de colores
+    const colorLegendMinimizeBtn = document.getElementById('color-legend-minimize');
+    if (colorLegendMinimizeBtn && colorLegendWindow) {
+      colorLegendMinimizeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        colorLegendWindow.classList.toggle('minimized');
+      });
     }
   }
 
