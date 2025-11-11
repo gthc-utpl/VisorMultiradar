@@ -858,14 +858,6 @@ body {
   animation: spin 1s linear infinite;
 }
 
-#fab-location {
-  top: 290px;
-}
-
-#fab-location.active {
-  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
-}
-
 /* ============================================================================
    PANEL DE INFORMACIÓN FLOTANTE (SIDEBAR)
    ============================================================================ */
@@ -1096,9 +1088,6 @@ body {
   margin-top: 15px;
   padding-top: 15px;
   border-top: 1px solid #dbe4f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .user-location-control label {
@@ -1293,9 +1282,9 @@ footer {
 }
 
 .user-accuracy-circle {
-  fill: rgba(66, 133, 244, 0.2);
-  stroke: rgba(66, 133, 244, 0.6);
-  stroke-width: 2;
+  fill: rgba(66, 133, 244, 0.25);
+  stroke: rgba(25, 103, 210, 0.8);
+  stroke-width: 3;
 }
 
 /* ============================================================================
@@ -1661,14 +1650,23 @@ footer {
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
 }
 
-/* Estilo para el círculo de precisión */
+/* Estilo para el círculo de precisión con animación */
 .user-accuracy-circle {
-  stroke-dasharray: 5, 5;
-  animation: dash 20s linear infinite;
+  stroke-dasharray: 8, 8;
+  animation: dash 15s linear infinite, pulse-circle 2s ease-in-out infinite;
 }
 
 @keyframes dash {
   to {
     stroke-dashoffset: -100;
+  }
+}
+
+@keyframes pulse-circle {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
   }
 }
