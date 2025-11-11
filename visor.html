@@ -35,16 +35,17 @@
     </div>
   </div>
 
-  <button id="mobile-menu-toggle" class="mobile-menu-btn">
-    <i class="fas fa-bars"></i>
+  <!-- Botón para mostrar panel de información -->
+  <button id="info-panel-toggle" class="info-panel-btn">
+    <i class="fas fa-info-circle"></i>
   </button>
 
   <main class="main-container">
     <div class="content-wrapper">
-      
+
       <section class="map-section">
         <div class="map-container">
-          
+
           <div class="loader-overlay" id="loader-overlay">
             <div class="loader-spinner"></div>
             <div class="loader-text" id="loader-text">Cargando datos de radares...</div>
@@ -59,7 +60,59 @@
               <div class="preload-details" id="preload-details"></div>
             </div>
           </div>
-          
+
+          <!-- Panel de controles de animación flotante (superior derecha) -->
+          <div class="animation-panel" id="animation-panel">
+            <div class="animation-panel-header">
+              <h3>
+                <i class="fas fa-film"></i>
+                <span>Animación</span>
+              </h3>
+              <button id="close-animation-btn" class="close-animation-btn" title="Cerrar panel de animación">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div class="animation-panel-controls">
+              <div class="animation-period">
+                <label>Período:</label>
+                <select id="animation-period-select">
+                  <option value="1">1h</option>
+                  <option value="2">2h</option>
+                  <option value="4" selected>4h</option>
+                </select>
+              </div>
+
+              <div class="animation-buttons">
+                <button id="animation-first" class="animation-button" title="Primer frame">
+                  <i class="fas fa-step-backward"></i>
+                </button>
+                <button id="animation-prev" class="animation-button" title="Frame anterior">
+                  <i class="fas fa-backward"></i>
+                </button>
+                <button id="animation-play" class="animation-button animation-play-btn" title="Reproducir/Pausar">
+                  <i class="fas fa-play"></i>
+                </button>
+                <button id="animation-next" class="animation-button" title="Frame siguiente">
+                  <i class="fas fa-forward"></i>
+                </button>
+                <button id="animation-last" class="animation-button" title="Último frame">
+                  <i class="fas fa-step-forward"></i>
+                </button>
+              </div>
+
+              <div class="animation-speed">
+                <label>Velocidad:</label>
+                <select id="animation-speed-select">
+                  <option value="0.5">0.5x</option>
+                  <option value="1">1x</option>
+                  <option value="2">2x</option>
+                  <option value="4" selected>4x</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div class="animation-timeline" id="animation-timeline">
             <div class="timeline-progress">
               <div class="timeline-bar" id="timeline-bar"></div>
@@ -67,58 +120,14 @@
             </div>
             <div class="timeline-ticks" id="timeline-ticks"></div>
           </div>
-          
+
           <div id="map"></div>
         </div>
-        
-        <div class="animation-controls" id="animation-controls">
-          <div class="animation-period">
-            <label>Período:</label>
-            <select id="animation-period-select">
-              <option value="1">Última hora</option>
-              <option value="2">Últimas 2 horas</option>
-              <option value="4" selected>Últimas 4 horas</option>
-            </select>
-          </div>
-          
-          <div class="animation-buttons">
-            <button id="animation-first" class="animation-button" title="Primer frame">
-              <i class="fas fa-step-backward"></i>
-            </button>
-            <button id="animation-prev" class="animation-button" title="Frame anterior">
-              <i class="fas fa-backward"></i>
-            </button>
-            <button id="animation-play" class="animation-button animation-play-btn" title="Reproducir/Pausar">
-              <i class="fas fa-play"></i>
-            </button>
-            <button id="animation-next" class="animation-button" title="Frame siguiente">
-              <i class="fas fa-forward"></i>
-            </button>
-            <button id="animation-last" class="animation-button" title="Último frame">
-              <i class="fas fa-step-forward"></i>
-            </button>
-          </div>
-          
-          <div class="animation-speed">
-            <label>Velocidad:</label>
-            <select id="animation-speed-select">
-              <option value="0.5">0.5x</option>
-              <option value="1">1x</option>
-              <option value="2">2x</option>
-              <option value="4" selected>4x</option>
-            </select>
-          </div>
-        </div>
-        
+
         <div class="control-bar">
           <button id="toggle-animation-btn" class="btn-primary" title="Activa/desactiva el modo animación para ver el historial de imágenes">
             <i class="fas fa-film"></i>
             <span>Activar animación</span>
-          </button>
-
-          <button id="export-gif-btn" class="btn-secondary" style="display: none;" title="Exporta la animación actual como archivo GIF descargable">
-            <i class="fas fa-file-export"></i>
-            <span>Exportar GIF</span>
           </button>
 
           <button id="refresh-button" class="btn-secondary" title="Actualiza los datos con las últimas capturas disponibles">
@@ -127,8 +136,9 @@
           </button>
         </div>
       </section>
-      
-      <aside class="sidebar">
+
+      <!-- Panel flotante de información (oculto por defecto) -->
+      <aside class="sidebar info-panel" id="info-panel">
         
         <div class="sidebar-section sidebar-legend">
           <h3>Leyenda de Intensidad (dBZ)</h3>
