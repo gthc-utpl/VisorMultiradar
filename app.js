@@ -1273,26 +1273,23 @@ document.addEventListener('DOMContentLoaded', () => {
   
   /**
    * Manages the download of all records for the selected period.
+   * Note: Caller should manage loader display
    */
   async function downloadAnimationData() {
-      showLoader('Descargando historial de registros para la animación...');
-      
       const hours = parseInt(elements.periodSelect.value, 10);
       const totalFrames = await loadRadarData(hours);
 
-      hideLoader();
-      
       if (totalFrames < 2) {
           // If not enough data to animate, disable animation mode
           isAnimationActive = false;
           elements.toggleAnim.innerHTML = '<i class="fas fa-film"></i><span>Activar animación</span>';
           elements.controls.classList.remove('active');
           elements.timeline.classList.remove('active');
-          
+
           showNotification('Se necesitan al menos 2 registros para animar en el período seleccionado', true);
           return false;
       }
-      
+
       return true;
   }
 
@@ -1302,31 +1299,53 @@ document.addEventListener('DOMContentLoaded', () => {
     isAnimationActive = willBeActive;
 
     if (isAnimationActive) {
-      // 1. Download data if necessary (if allTimestamps is empty)
-      if (allTimestamps.length === 0) {
+      // Mostrar feedback inmediato al usuario
+      showLoader('Preparando animación...');
+      elements.toggleAnim.disabled = true; // Deshabilitar botón mientras carga
+
+      try {
+        // 1. Download data if necessary (if allTimestamps is empty)
+        if (allTimestamps.length === 0) {
+          elements.loaderText.textContent = 'Descargando historial de registros...';
           const success = await downloadAnimationData();
           if (!success) {
-              // If download failed or not enough data, exit.
-              return;
+            // If download failed or not enough data, exit.
+            elements.toggleAnim.disabled = false;
+            hideLoader();
+            return;
           }
-      }
+        }
 
-      // 2. Precargar todas las imágenes antes de iniciar animación
-      const filteredTimestamps = getFilteredTimestamps();
-      try {
-        await preloadAnimationImages(filteredTimestamps);
+        // 2. Precargar todas las imágenes antes de iniciar animación
+        const filteredTimestamps = getFilteredTimestamps();
+        elements.loaderText.textContent = `Precargando ${filteredTimestamps.length} imágenes...`;
+
+        try {
+          await preloadAnimationImages(filteredTimestamps);
+        } catch (error) {
+          console.error('Error en precarga de imágenes:', error);
+          showNotification('Error al precargar algunas imágenes. La animación continuará.', true);
+        }
+
+        // 3. Setup and start animation
+        elements.loaderText.textContent = 'Iniciando animación...';
+        setupAnimation();
+        elements.toggleAnim.innerHTML = '<i class="fas fa-stop"></i><span>Desactivar animación</span>';
+        elements.controls.classList.add('active');
+        elements.timeline.classList.add('active');
+        elements.exportGif.style.display = 'flex'; // Mostrar botón de exportar GIF
+
+        hideLoader();
+        elements.toggleAnim.disabled = false;
+
+        toggleAnimationPlay(); // Start playing automatically (4x by default)
       } catch (error) {
-        console.error('Error en precarga de imágenes:', error);
-        showNotification('Error al precargar imágenes. La animación continuará.', true);
+        console.error('Error al activar animación:', error);
+        showNotification('Error al activar la animación', true);
+        elements.toggleAnim.disabled = false;
+        hideLoader();
+        isAnimationActive = false;
       }
-
-      // 3. Setup and start animation
-      setupAnimation();
-      elements.toggleAnim.innerHTML = '<i class="fas fa-stop"></i><span>Desactivar animación</span>';
-      elements.controls.classList.add('active');
-      elements.timeline.classList.add('active');
-      elements.exportGif.style.display = 'flex'; // Mostrar botón de exportar GIF
-      toggleAnimationPlay(); // Start playing automatically (4x by default)
 
     } else {
       elements.toggleAnim.innerHTML = '<i class="fas fa-film"></i><span>Activar animación</span>';
@@ -1339,7 +1358,9 @@ document.addEventListener('DOMContentLoaded', () => {
       clearPreloadedImages();
 
       // Reload the latest capture in static mode
-      loadLatestImages();
+      showLoader('Cargando vista estática...');
+      await loadLatestImages();
+      hideLoader();
     }
   }
 
@@ -1764,25 +1785,25 @@ document.addEventListener('DOMContentLoaded', () => {
       userLocationMarker.setLatLng([position.lat, position.lng]);
       userLocationMarker.setPopupContent(popupContent);
     } else {
-      // Icono SVG personalizado mejorado
+      // Icono SVG personalizado mejorado con mayor tamaño
       const markerHtml = `
         <div class="user-location-marker-wrapper">
           <div class="user-location-pulse"></div>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="60" height="60">
             <defs>
               <linearGradient id="userLocationGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
                 <stop offset="100%" style="stop-color:#1565C0;stop-opacity:1" />
               </linearGradient>
               <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.4"/>
+                <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000000" flood-opacity="0.5"/>
               </filter>
             </defs>
             <circle cx="12" cy="12" r="11" fill="url(#userLocationGradient)" filter="url(#shadow)"/>
             <circle cx="12" cy="12" r="8" fill="white" opacity="0.3"/>
             <circle cx="12" cy="12" r="4" fill="white"/>
             <path d="M12 2 L12 6 M12 18 L12 22 M2 12 L6 12 M18 12 L22 12"
-                  stroke="white" stroke-width="2" stroke-linecap="round"/>
+                  stroke="white" stroke-width="2.5" stroke-linecap="round"/>
           </svg>
         </div>
       `;
@@ -1791,8 +1812,8 @@ document.addEventListener('DOMContentLoaded', () => {
         icon: L.divIcon({
           className: 'user-location-marker',
           html: markerHtml,
-          iconSize: [40, 40],
-          iconAnchor: [20, 20]
+          iconSize: [60, 60],
+          iconAnchor: [30, 30]
         }),
         zIndexOffset: 1000
       }).addTo(map);
@@ -1851,22 +1872,30 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // Verificar que gif.js esté disponible
       if (typeof GIF === 'undefined') {
-        showNotification('Error: Librería GIF.js no disponible', true);
+        showNotification('Error: Librería GIF.js no disponible. Recargue la página.', true);
         return;
       }
 
-      showLoader('Generando GIF... Esto puede tardar unos minutos');
+      // Detener la animación si está reproduciéndose
+      const wasPlaying = animationInterval !== null;
+      if (wasPlaying) {
+        stopAnimation();
+      }
+
+      showLoader('Preparando exportación de GIF...');
 
       const filteredTimestamps = getFilteredTimestamps();
       const frameDelay = 500; // 500ms por frame (2 fps)
 
-      // Configurar gif.js
+      // Configurar gif.js con el worker local
       const gif = new GIF({
         workers: 2,
         quality: 10,
         width: 800,
         height: 600,
-        workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+        workerScript: 'gif.worker.js',
+        background: '#f5f7fa',
+        transparent: null
       });
 
       // Capturar cada frame del mapa
@@ -1913,12 +1942,23 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        showNotification('GIF generado y descargado exitosamente');
+        showNotification(`GIF descargado exitosamente (${filteredTimestamps.length} frames)`);
+
+        // Reanudar animación si estaba reproduciéndose
+        if (wasPlaying) {
+          setTimeout(() => playAnimation(), 1000);
+        }
       });
 
       gif.on('progress', function(progress) {
         const percentage = Math.round(progress * 100);
         elements.loaderText.textContent = `Renderizando GIF... ${percentage}%`;
+      });
+
+      gif.on('error', function(error) {
+        hideLoader();
+        console.error('Error en gif.js:', error);
+        showNotification('Error al generar el GIF. Intente con menos frames.', true);
       });
 
       gif.render();
@@ -2178,18 +2218,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const wasPlaying = animationInterval !== null;
         stopAnimation();
 
+        // Mostrar loader mientras carga nuevo período
+        showLoader('Descargando datos para el nuevo período...');
+        elements.periodSelect.disabled = true;
+
         // Force data reload for the new period
         const success = await downloadAnimationData();
-        
+
         if (success) {
+            // Precargar imágenes del nuevo período
+            const filteredTimestamps = getFilteredTimestamps();
+            elements.loaderText.textContent = `Precargando ${filteredTimestamps.length} imágenes...`;
+
+            try {
+              await preloadAnimationImages(filteredTimestamps);
+            } catch (error) {
+              console.error('Error precargando imágenes:', error);
+            }
+
             setupAnimation();
+            hideLoader();
+            elements.periodSelect.disabled = false;
+
             if (wasPlaying) {
               setTimeout(() => {
                 playAnimation();
               }, 100);
             }
         } else {
-            // If download fails, loadLatestImages() will have been called in toggleAnimation.
+            hideLoader();
+            elements.periodSelect.disabled = false;
         }
       }
     });
@@ -2216,15 +2274,18 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.refresh.addEventListener('click', async () => {
       elements.refresh.disabled = true;
       elements.refreshIcon.classList.add('fa-spin');
-      
+
       let wasPlaying = animationInterval !== null;
 
       if (isAnimationActive) {
           // Refresh Logic in Animation:
           // 1. Stop playback (but keep isAnimationActive = true)
-          stopAnimation(); 
-          
-          // 2. Download new data
+          stopAnimation();
+
+          // 2. Mostrar loader
+          showLoader('Actualizando datos...');
+
+          // 3. Download new data
           const totalFramesBefore = allTimestamps.length;
           const success = await downloadAnimationData();
           
@@ -2232,27 +2293,40 @@ document.addEventListener('DOMContentLoaded', () => {
               const totalFramesAfter = allTimestamps.length;
               const latestTimestamp = allTimestamps[allTimestamps.length - 1];
               const latestLT = removeSeconds(extractLocalTime(latestTimestamp.formatted_time || latestTimestamp.datetime_local));
-              
-              // 3. Reconfigure animation with new data
+
+              // 4. Precargar nuevas imágenes
+              const filteredTimestamps = getFilteredTimestamps();
+              elements.loaderText.textContent = `Precargando ${filteredTimestamps.length} imágenes...`;
+
+              try {
+                await preloadAnimationImages(filteredTimestamps);
+              } catch (error) {
+                console.error('Error precargando imágenes:', error);
+              }
+
+              // 5. Reconfigure animation with new data
               setupAnimation();
-              
-              // 4. Determine where to continue
+
+              hideLoader();
+
+              // 6. Determine where to continue
               if (wasPlaying && totalFramesAfter > totalFramesBefore) {
                   // If it was playing and there is new data, start from frame 0 to show the complete cycle
                   goToFrame(0);
                   playAnimation();
-                  showNotification(`Actualización exitosa: ${latestLT} LT`); // Mensaje simplificado
+                  showNotification(`Actualización exitosa: ${latestLT} LT`);
               } else if (wasPlaying) {
                   // If it was playing but there is no new data, simply restart playback
                   playAnimation();
-                  showNotification(`Actualización completada: ${latestLT} LT`); // Mensaje simplificado
+                  showNotification(`Actualización completada: ${latestLT} LT`);
               } else {
                   // If it was paused, simply update the view to the last frame
                   goToFrame(totalFramesAfter - 1);
-                  showNotification(`Actualización completada: ${latestLT} LT`); // Mensaje simplificado
+                  showNotification(`Actualización completada: ${latestLT} LT`);
               }
           } else {
               // If download fails, downloadAnimationData will have already disabled the animation
+              hideLoader();
               showNotification(`Error al actualizar el historial de registros.`, true);
           }
           
