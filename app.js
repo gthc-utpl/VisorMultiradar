@@ -95,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
     lastBtn: document.getElementById('animation-last'),
     refresh: document.getElementById('refresh-button'),
     refreshIcon: document.getElementById('refresh-icon'),
-    exportGif: document.getElementById('export-gif-btn'),
 
     // Precarga
     preloadProgress: document.getElementById('preload-progress'),
@@ -1331,9 +1330,8 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.loaderText.textContent = 'Iniciando animación...';
         setupAnimation();
         elements.toggleAnim.innerHTML = '<i class="fas fa-stop"></i><span>Desactivar animación</span>';
-        elements.controls.classList.add('active');
+        document.getElementById('animation-panel').classList.add('active');
         elements.timeline.classList.add('active');
-        elements.exportGif.style.display = 'flex'; // Mostrar botón de exportar GIF
 
         hideLoader();
         elements.toggleAnim.disabled = false;
@@ -1350,9 +1348,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       elements.toggleAnim.innerHTML = '<i class="fas fa-film"></i><span>Activar animación</span>';
       stopAnimation();
-      elements.controls.classList.remove('active');
+      document.getElementById('animation-panel').classList.remove('active');
       elements.timeline.classList.remove('active');
-      elements.exportGif.style.display = 'none'; // Ocultar botón de exportar GIF
 
       // Limpiar imágenes precargadas para liberar memoria
       clearPreloadedImages();
@@ -1789,14 +1786,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const markerHtml = `
         <div class="user-location-marker-wrapper">
           <div class="user-location-pulse"></div>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="60" height="60">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="90" height="90">
             <defs>
               <linearGradient id="userLocationGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
                 <stop offset="100%" style="stop-color:#1565C0;stop-opacity:1" />
               </linearGradient>
               <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-                <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000000" flood-opacity="0.5"/>
+                <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
               </filter>
             </defs>
             <circle cx="12" cy="12" r="11" fill="url(#userLocationGradient)" filter="url(#shadow)"/>
@@ -1812,8 +1809,8 @@ document.addEventListener('DOMContentLoaded', () => {
         icon: L.divIcon({
           className: 'user-location-marker',
           html: markerHtml,
-          iconSize: [60, 60],
-          iconAnchor: [30, 30]
+          iconSize: [90, 90],
+          iconAnchor: [45, 45]
         }),
         zIndexOffset: 1000
       }).addTo(map);
@@ -2182,9 +2179,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // Animation toggle
     elements.toggleAnim.addEventListener('click', toggleAnimation);
 
-    // Export GIF
-    if (elements.exportGif) {
-      elements.exportGif.addEventListener('click', exportAnimationToGIF);
+    // Info panel toggle
+    const infoPanelToggle = document.getElementById('info-panel-toggle');
+    const infoPanel = document.getElementById('info-panel');
+    if (infoPanelToggle && infoPanel) {
+      infoPanelToggle.addEventListener('click', () => {
+        infoPanel.classList.toggle('visible');
+        infoPanelToggle.classList.toggle('active');
+      });
+    }
+
+    // Close animation panel
+    const closeAnimationBtn = document.getElementById('close-animation-btn');
+    if (closeAnimationBtn) {
+      closeAnimationBtn.addEventListener('click', () => {
+        if (isAnimationActive) {
+          toggleAnimation();
+        }
+      });
     }
 
     // Animation controls
