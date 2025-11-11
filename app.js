@@ -1567,6 +1567,97 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     elements.locationStatus.innerHTML = '<span style="color: #666;">Inactivo</span>';
+
+    // Solicitar automáticamente la ubicación al usuario después de cargar el mapa
+    setTimeout(() => {
+      promptUserForLocation();
+    }, 2000); // Esperar 2 segundos después de cargar para no ser intrusivo
+  }
+
+  /**
+   * Solicita permiso al usuario para activar la geolocalización
+   */
+  function promptUserForLocation() {
+    // Verificar si ya se negó el permiso previamente
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        if (result.state === 'granted') {
+          // Si ya está autorizado, activar automáticamente
+          elements.toggleUserLocation.checked = true;
+          showUserLocation = true;
+          requestUserLocation();
+        } else if (result.state === 'prompt') {
+          // Si no se ha decidido, mostrar un mensaje amigable
+          showLocationPrompt();
+        }
+        // Si es 'denied', no hacer nada para respetar la decisión del usuario
+      }).catch(() => {
+        // Si la API de permisos no está disponible, mostrar el prompt directamente
+        showLocationPrompt();
+      });
+    } else {
+      // Fallback para navegadores sin soporte de permissions API
+      showLocationPrompt();
+    }
+  }
+
+  /**
+   * Muestra un diálogo personalizado para solicitar la ubicación
+   */
+  function showLocationPrompt() {
+    // Crear un diálogo personalizado
+    const dialog = document.createElement('div');
+    dialog.className = 'location-prompt-dialog';
+    dialog.innerHTML = `
+      <div class="location-prompt-content">
+        <div class="location-prompt-icon">📍</div>
+        <h3>¿Activar tu ubicación?</h3>
+        <p>Esto nos permitirá mostrarte tu posición en el mapa y verificar si estás dentro del área de cobertura de los radares.</p>
+        <div class="location-prompt-buttons">
+          <button class="btn-prompt-accept">Sí, activar</button>
+          <button class="btn-prompt-decline">No, gracias</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(dialog);
+
+    // Mostrar el diálogo con animación
+    setTimeout(() => {
+      dialog.classList.add('show');
+    }, 100);
+
+    // Manejar respuesta del usuario
+    const acceptBtn = dialog.querySelector('.btn-prompt-accept');
+    const declineBtn = dialog.querySelector('.btn-prompt-decline');
+
+    acceptBtn.addEventListener('click', () => {
+      elements.toggleUserLocation.checked = true;
+      showUserLocation = true;
+      requestUserLocation();
+      closePromptDialog(dialog);
+    });
+
+    declineBtn.addEventListener('click', () => {
+      closePromptDialog(dialog);
+    });
+
+    // Cerrar al hacer clic fuera del diálogo
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        closePromptDialog(dialog);
+      }
+    });
+  }
+
+  /**
+   * Cierra el diálogo de solicitud de ubicación
+   */
+  function closePromptDialog(dialog) {
+    dialog.classList.remove('show');
+    setTimeout(() => {
+      document.body.removeChild(dialog);
+    }, 300);
   }
 
   function requestUserLocation() {
@@ -1651,34 +1742,57 @@ document.addEventListener('DOMContentLoaded', () => {
     userAccuracyCircle = L.circle([position.lat, position.lng], {
       radius: position.accuracy,
       className: 'user-accuracy-circle',
-      fillOpacity: 0.2,
-      opacity: 0.6,
+      fillColor: '#2196F3',
+      fillOpacity: 0.15,
+      color: '#2196F3',
+      opacity: 0.5,
       weight: 2
     }).addTo(map);
 
     // Crear popup content
     const popupContent = `
       <div class="radar-popup">
-        <h4>Tu ubicación</h4>
-        <p>Lat: ${position.lat.toFixed(5)}°</p>
-        <p>Lng: ${position.lng.toFixed(5)}°</p>
-        <p>Precisión: ±${Math.round(position.accuracy)}m</p>
+        <h4>📍 Tu ubicación</h4>
+        <p><strong>Latitud:</strong> ${position.lat.toFixed(5)}°</p>
+        <p><strong>Longitud:</strong> ${position.lng.toFixed(5)}°</p>
+        <p><strong>Precisión:</strong> ±${Math.round(position.accuracy)}m</p>
       </div>
     `;
 
-    // Crear o actualizar marcador
+    // Crear o actualizar marcador con SVG personalizado
     if (userLocationMarker) {
       userLocationMarker.setLatLng([position.lat, position.lng]);
       userLocationMarker.setPopupContent(popupContent);
     } else {
-      const markerHtml = '📍';
+      // Icono SVG personalizado mejorado
+      const markerHtml = `
+        <div class="user-location-marker-wrapper">
+          <div class="user-location-pulse"></div>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40">
+            <defs>
+              <linearGradient id="userLocationGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#1565C0;stop-opacity:1" />
+              </linearGradient>
+              <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.4"/>
+              </filter>
+            </defs>
+            <circle cx="12" cy="12" r="11" fill="url(#userLocationGradient)" filter="url(#shadow)"/>
+            <circle cx="12" cy="12" r="8" fill="white" opacity="0.3"/>
+            <circle cx="12" cy="12" r="4" fill="white"/>
+            <path d="M12 2 L12 6 M12 18 L12 22 M2 12 L6 12 M18 12 L22 12"
+                  stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+      `;
 
       userLocationMarker = L.marker([position.lat, position.lng], {
         icon: L.divIcon({
           className: 'user-location-marker',
           html: markerHtml,
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
+          iconSize: [40, 40],
+          iconAnchor: [20, 20]
         }),
         zIndexOffset: 1000
       }).addTo(map);
@@ -1886,17 +2000,60 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
 
-        // Agregar marca de agua con timestamp
+        // ========================================
+        // MARCA DE AGUA MEJORADA
+        // ========================================
+
+        // Obtener timestamp actual
         const currentTimestamp = getFilteredTimestamps()[currentFrame];
         if (currentTimestamp) {
           const timeStr = extractLocalTime(currentTimestamp.formatted_time || currentTimestamp.datetime_local);
+          const ltTimeOnly = removeSeconds(timeStr);
 
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-          ctx.fillRect(10, canvas.height - 40, 300, 30);
+          // Fondo semitransparente para la marca de agua (esquina inferior izquierda)
+          const watermarkHeight = 70;
+          const watermarkWidth = 380;
+          const padding = 15;
 
+          // Rectángulo con gradiente
+          const gradient = ctx.createLinearGradient(0, canvas.height - watermarkHeight, 0, canvas.height);
+          gradient.addColorStop(0, 'rgba(30, 72, 142, 0.85)'); // Azul UTPL
+          gradient.addColorStop(1, 'rgba(20, 52, 102, 0.9)');
+
+          ctx.fillStyle = gradient;
+          ctx.fillRect(10, canvas.height - watermarkHeight - 10, watermarkWidth, watermarkHeight);
+
+          // Borde sutil
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(10, canvas.height - watermarkHeight - 10, watermarkWidth, watermarkHeight);
+
+          // Texto principal: "Observatorio de Clima - UTPL"
           ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 16px Arial';
-          ctx.fillText(timeStr + ' LT', 20, canvas.height - 18);
+          ctx.font = 'bold 18px Arial, sans-serif';
+          ctx.fillText('Observatorio de Clima - UTPL', 25, canvas.height - watermarkHeight + 15);
+
+          // Línea separadora
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(25, canvas.height - watermarkHeight + 25);
+          ctx.lineTo(watermarkWidth - 15, canvas.height - watermarkHeight + 25);
+          ctx.stroke();
+
+          // Fecha y hora en LT
+          ctx.font = 'bold 16px Arial, sans-serif';
+          ctx.fillStyle = '#FFD700'; // Dorado para destacar
+          ctx.fillText(`📅 ${ltTimeOnly} LT`, 25, canvas.height - watermarkHeight + 45);
+
+          // Etiqueta de radares activos
+          const activeRadarsList = Array.from(activeRadars).map(id =>
+            id.toUpperCase()
+          ).join(' + ');
+
+          ctx.font = '12px Arial, sans-serif';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+          ctx.fillText(`Radares: ${activeRadarsList}`, 25, canvas.height - 20);
         }
 
         resolve(canvas);
