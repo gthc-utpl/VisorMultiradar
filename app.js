@@ -1787,8 +1787,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Ya no se solicita automáticamente - el usuario activa desde el checkbox en configuración
-    // La ubicación se controla desde el panel de configuración (checkbox "Mostrar mi ubicación")
+    // Solicitar permiso automáticamente después de un breve retraso
+    // El marcador se muestra con permiso - el checkbox solo controla el popup de detalles
+    setTimeout(() => {
+      promptUserForLocation();
+    }, 2000);
   }
 
   /**
@@ -1799,12 +1802,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (navigator.permissions) {
       navigator.permissions.query({ name: 'geolocation' }).then((result) => {
         if (result.state === 'granted') {
-          // Si ya está autorizado, activar automáticamente
+          // Si ya está autorizado, activar automáticamente el marcador
+          // (el checkbox solo controla si se muestra el popup con detalles)
           showUserLocation = true;
           requestUserLocation();
-          // Marcar checkbox como activo
-          const toggleUserLocation = document.getElementById('toggle-user-location');
-          if (toggleUserLocation) toggleUserLocation.checked = true;
         } else if (result.state === 'prompt') {
           // Si no se ha decidido, mostrar un mensaje amigable
           showLocationPrompt();
@@ -1853,9 +1854,7 @@ document.addEventListener('DOMContentLoaded', () => {
     acceptBtn.addEventListener('click', () => {
       showUserLocation = true;
       requestUserLocation();
-      // Marcar checkbox como activo
-      const toggleUserLocation = document.getElementById('toggle-user-location');
-      if (toggleUserLocation) toggleUserLocation.checked = true;
+      // El checkbox permanece sin marcar - solo controla el popup de detalles
       closePromptDialog(dialog);
     });
 
@@ -2408,12 +2407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleUserLocation) {
       toggleUserLocation.addEventListener('change', () => {
         if (toggleUserLocation.checked) {
-          // Activar ubicación
-          showUserLocation = true;
-          requestUserLocation();
-          showNotification('Ubicación activada');
-
-          // Si el marcador ya existe, agregar el popup
+          // Activar popup de detalles
           if (userLocationMarker && userPosition) {
             const popupContent = `
               <div class="radar-popup">
@@ -2424,28 +2418,17 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
             `;
             userLocationMarker.bindPopup(popupContent);
+            showNotification('Detalles de ubicación activados');
+          } else {
+            showNotification('Primero debes permitir el acceso a tu ubicación', true);
+            toggleUserLocation.checked = false;
           }
         } else {
-          // Desactivar ubicación
-          showUserLocation = false;
-
-          // Detener el watch de geolocalización
-          if (watchId !== null) {
-            navigator.geolocation.clearWatch(watchId);
-            watchId = null;
-          }
-
-          // Remover marcador y círculo de precisión del mapa
+          // Desactivar popup de detalles (pero mantener el marcador)
           if (userLocationMarker) {
-            map.removeLayer(userLocationMarker);
-            userLocationMarker = null;
+            userLocationMarker.unbindPopup();
+            showNotification('Detalles de ubicación desactivados');
           }
-          if (accuracyCircle) {
-            map.removeLayer(accuracyCircle);
-            accuracyCircle = null;
-          }
-
-          showNotification('Ubicación desactivada');
         }
       });
     }
@@ -2474,7 +2457,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           showNotification('Centrado en tu ubicación');
         } else {
-          showNotification('Primero activa tu ubicación desde Configuración', true);
+          showNotification('Primero debes permitir el acceso a tu ubicación', true);
         }
       });
     }
