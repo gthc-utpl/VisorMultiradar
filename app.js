@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Precarga todas las imágenes para la animación
+   * Precarga todas las imágenes para la animación usando imagesLoaded
    */
   async function preloadAnimationImages(timestamps) {
     return new Promise(async (resolve, reject) => {
@@ -289,61 +289,97 @@ document.addEventListener('DOMContentLoaded', () => {
         // Limpiar precarga anterior
         clearPreloadedImages();
 
-        // Array de promesas para cargar todas las imágenes
-        const loadPromises = timestamps.map(async (timestamp, index) => {
-          const config = timestamp.radarConfig;
-          const imagePath = getImagePath(
-            config,
-            timestamp.year,
-            timestamp.julianDay,
-            timestamp.filename
-          );
+        // Crear contenedor temporal para las imágenes
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '-9999px';
+        document.body.appendChild(tempContainer);
 
-          const fullUrl = new URL(imagePath, window.location.origin).href;
+        // Array de promesas para cargar todas las imágenes en lotes
+        const BATCH_SIZE = 10; // Cargar 10 imágenes a la vez para mejor rendimiento
 
-          try {
-            // Intentar obtener del cache primero
-            let response = await getCachedImage(fullUrl);
+        for (let i = 0; i < timestamps.length; i += BATCH_SIZE) {
+          const batch = timestamps.slice(i, Math.min(i + BATCH_SIZE, timestamps.length));
 
-            if (!response) {
-              // Si no está en cache, descargar
-              response = await fetch(fullUrl);
-              if (response.ok) {
-                await cacheImage(fullUrl, response);
-              } else {
-                throw new Error(`HTTP ${response.status}`);
+          const batchPromises = batch.map(async (timestamp, batchIndex) => {
+            const index = i + batchIndex;
+            const config = timestamp.radarConfig;
+            const imagePath = getImagePath(
+              config,
+              timestamp.year,
+              timestamp.julianDay,
+              timestamp.filename
+            );
+
+            const fullUrl = new URL(imagePath, window.location.origin).href;
+
+            try {
+              // Intentar obtener del cache primero
+              let response = await getCachedImage(fullUrl);
+
+              if (!response) {
+                // Si no está en cache, descargar
+                response = await fetch(fullUrl);
+                if (response.ok) {
+                  await cacheImage(fullUrl, response);
+                } else {
+                  throw new Error(`HTTP ${response.status}`);
+                }
               }
-            }
 
-            // Crear objeto Image para precarga real en memoria
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-
-            await new Promise((resolveImg, rejectImg) => {
-              img.onload = () => {
-                preloadedImages.set(fullUrl, img);
-                loadedCount++;
-                updatePreloadProgress(loadedCount, totalImages, errorCount);
-                resolveImg();
-              };
-              img.onerror = () => {
-                errorCount++;
-                console.warn(`Error cargando imagen ${index + 1}/${totalImages}: ${imagePath}`);
-                updatePreloadProgress(loadedCount, totalImages, errorCount);
-                resolveImg(); // Continuar aunque falle
-              };
+              // Crear objeto Image para precarga con imagesLoaded
+              const img = document.createElement('img');
+              img.crossOrigin = 'anonymous';
               img.src = fullUrl;
-            });
+              tempContainer.appendChild(img);
 
-          } catch (error) {
-            errorCount++;
-            console.warn(`Error descargando imagen ${index + 1}/${totalImages}:`, error);
-            updatePreloadProgress(loadedCount, totalImages, errorCount);
-          }
-        });
+              // Usar imagesLoaded si está disponible
+              if (typeof imagesLoaded !== 'undefined') {
+                await new Promise((resolveImg) => {
+                  imagesLoaded(img, { background: false }, function() {
+                    preloadedImages.set(fullUrl, img);
+                    loadedCount++;
+                    updatePreloadProgress(loadedCount, totalImages, errorCount);
+                    resolveImg();
+                  }).on('fail', function() {
+                    errorCount++;
+                    console.warn(`Error cargando imagen ${index + 1}/${totalImages}: ${imagePath}`);
+                    updatePreloadProgress(loadedCount, totalImages, errorCount);
+                    resolveImg();
+                  });
+                });
+              } else {
+                // Fallback sin imagesLoaded
+                await new Promise((resolveImg) => {
+                  img.onload = () => {
+                    preloadedImages.set(fullUrl, img);
+                    loadedCount++;
+                    updatePreloadProgress(loadedCount, totalImages, errorCount);
+                    resolveImg();
+                  };
+                  img.onerror = () => {
+                    errorCount++;
+                    console.warn(`Error cargando imagen ${index + 1}/${totalImages}: ${imagePath}`);
+                    updatePreloadProgress(loadedCount, totalImages, errorCount);
+                    resolveImg();
+                  };
+                });
+              }
 
-        // Esperar a que todas las imágenes se carguen
-        await Promise.all(loadPromises);
+            } catch (error) {
+              errorCount++;
+              console.warn(`Error descargando imagen ${index + 1}/${totalImages}:`, error);
+              updatePreloadProgress(loadedCount, totalImages, errorCount);
+            }
+          });
+
+          // Esperar a que termine el lote actual antes de continuar
+          await Promise.all(batchPromises);
+        }
+
+        // Limpiar contenedor temporal
+        document.body.removeChild(tempContainer);
 
         hidePreloadProgress();
 
@@ -707,10 +743,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Obtener posición inicial desde CSS
     const computedStyle = window.getComputedStyle(element);
-    const initialTop = parseInt(computedStyle.top) || 0;
-    const initialLeft = parseInt(computedStyle.left) || 0;
-    const initialRight = parseInt(computedStyle.right) || 0;
-    const initialBottom = parseInt(computedStyle.bottom) || 0;
 
     // Si tiene right, convertir a left
     if (computedStyle.right !== 'auto' && computedStyle.left === 'auto') {
@@ -747,6 +779,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.target === handle || handle.contains(e.target)) {
         isDragging = true;
         element.style.zIndex = 1000; // Traer al frente mientras se arrastra
+        element.style.cursor = 'grabbing';
+        // Desactivar transiciones durante el arrastre para movimiento suave
+        element.style.transition = 'none';
       }
     }
 
@@ -765,13 +800,21 @@ document.addEventListener('DOMContentLoaded', () => {
         xOffset = currentX;
         yOffset = currentY;
 
-        // Limitar el movimiento dentro de la ventana
+        // Movimiento libre sin restricciones estrictas
+        // Solo aseguramos que al menos 50px del elemento permanezcan visibles
         const rect = element.getBoundingClientRect();
-        const maxX = window.innerWidth - rect.width;
-        const maxY = window.innerHeight - rect.height;
+        const minVisiblePx = 50;
 
-        const boundedX = Math.max(0, Math.min(currentX + parseInt(element.style.left || 0), maxX));
-        const boundedY = Math.max(0, Math.min(currentY + parseInt(element.style.top || 0), maxY));
+        const maxX = window.innerWidth - minVisiblePx;
+        const minX = -rect.width + minVisiblePx;
+        const maxY = window.innerHeight - minVisiblePx;
+        const minY = 0;
+
+        const newLeft = parseInt(element.style.left || 0);
+        const newTop = parseInt(element.style.top || 0);
+
+        const boundedX = Math.max(minX, Math.min(currentX + newLeft, maxX));
+        const boundedY = Math.max(minY, Math.min(currentY + newTop, maxY));
 
         setTranslate(boundedX, boundedY, element);
       }
@@ -783,6 +826,9 @@ document.addEventListener('DOMContentLoaded', () => {
         initialY = currentY;
         isDragging = false;
         element.style.zIndex = 900; // Restaurar z-index original
+        element.style.cursor = '';
+        // Restaurar transiciones suaves
+        element.style.transition = '';
       }
     }
 
