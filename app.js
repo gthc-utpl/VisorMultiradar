@@ -855,12 +855,8 @@ document.addEventListener('DOMContentLoaded', () => {
       makeDraggable(animationPanel, animationHeader);
     }
 
-    // Hacer movible la ventana de colores (usando solo el header como handle)
+    // La ventana de colores ahora es fija (no movible)
     const colorLegendWindow = document.getElementById('color-legend-window');
-    const colorLegendHeader = colorLegendWindow?.querySelector('.color-legend-header');
-    if (colorLegendWindow && colorLegendHeader) {
-      makeDraggable(colorLegendWindow, colorLegendHeader);
-    }
 
     // Botón de minimizar panel de animación
     const animationMinimizeBtn = document.getElementById('animation-minimize-btn');
@@ -1473,6 +1469,10 @@ document.addEventListener('DOMContentLoaded', () => {
           elements.controls.classList.remove('active');
           elements.timeline.classList.remove('active');
 
+          // Sync FAB button state
+          const fabAnimationToggle = document.getElementById('fab-animation-toggle');
+          if (fabAnimationToggle) fabAnimationToggle.classList.remove('active');
+
           showNotification('Se necesitan al menos 2 registros para animar en el período seleccionado', true);
           return false;
       }
@@ -1521,6 +1521,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('animation-panel').classList.add('active');
         elements.timeline.classList.add('active');
 
+        // Sync FAB button state
+        const fabAnimationToggle = document.getElementById('fab-animation-toggle');
+        if (fabAnimationToggle) fabAnimationToggle.classList.add('active');
+
         hideLoader();
         elements.toggleAnim.disabled = false;
 
@@ -1538,6 +1542,10 @@ document.addEventListener('DOMContentLoaded', () => {
       stopAnimation();
       document.getElementById('animation-panel').classList.remove('active');
       elements.timeline.classList.remove('active');
+
+      // Sync FAB button state
+      const fabAnimationToggle = document.getElementById('fab-animation-toggle');
+      if (fabAnimationToggle) fabAnimationToggle.classList.remove('active');
 
       // Limpiar imágenes precargadas para liberar memoria
       clearPreloadedImages();
@@ -2337,6 +2345,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Animation toggle
     elements.toggleAnim.addEventListener('click', toggleAnimation);
+
+    // FAB: Animation toggle button
+    const fabAnimationToggle = document.getElementById('fab-animation-toggle');
+    if (fabAnimationToggle) {
+      fabAnimationToggle.addEventListener('click', () => {
+        toggleAnimation();
+        // Update FAB button state to match animation state
+        if (isAnimationActive) {
+          fabAnimationToggle.classList.add('active');
+        } else {
+          fabAnimationToggle.classList.remove('active');
+        }
+      });
+    }
+
+    // FAB: Refresh button
+    const fabRefresh = document.getElementById('fab-refresh');
+    if (fabRefresh) {
+      fabRefresh.addEventListener('click', async () => {
+        // Trigger the existing refresh button click
+        elements.refresh.click();
+        // Add spin animation to FAB icon
+        const fabIcon = fabRefresh.querySelector('i');
+        if (fabIcon) {
+          fabIcon.classList.add('fa-spin');
+          // Remove spin after refresh completes (watch for refresh button to re-enable)
+          const checkRefreshComplete = setInterval(() => {
+            if (!elements.refresh.disabled) {
+              fabIcon.classList.remove('fa-spin');
+              clearInterval(checkRefreshComplete);
+            }
+          }, 100);
+        }
+      });
+    }
 
     // Info panel toggle con auto-ocultado
     const infoPanelToggle = document.getElementById('info-panel-toggle');
