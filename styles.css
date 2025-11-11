@@ -507,12 +507,12 @@ body {
 }
 
 /* ============================================================================
-   PANEL DE ANIMACIÓN FLOTANTE (Inferior izquierda, movible)
+   PANEL DE ANIMACIÓN FLOTANTE (Inferior derecha, movible)
    ============================================================================ */
 .animation-panel {
   position: absolute;
-  bottom: 15px;
-  left: 15px;
+  bottom: 210px;
+  right: 15px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 245, 255, 0.98) 100%);
   border-radius: 12px;
   padding: 15px;
@@ -527,10 +527,11 @@ body {
   border: 2px solid rgba(30, 71, 142, 0.3);
   backdrop-filter: blur(10px);
   user-select: none;
-  transition: all 0.3s ease;
+  transition: opacity 0.3s ease, box-shadow 0.3s ease;
   resize: none;
   overflow: visible;
   opacity: 0.5;
+  pointer-events: auto;
 }
 
 .animation-panel:hover {
