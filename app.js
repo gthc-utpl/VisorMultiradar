@@ -1719,7 +1719,9 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Usuario fuera de zonas de cobertura de radares');
       // Si no está en zona de radar, solo actualizar el marcador sin centrar
     }
+  }
 
+  // ============================================================================
   // EXPORTACIÓN A GIF
   // ============================================================================
 
