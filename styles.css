@@ -1100,8 +1100,202 @@ footer {
   
   .notification {
     /* 🌟 Ajuste para móvil pequeño */
-    bottom: 120px; 
+    bottom: 120px;
     right: 10px;
     max-width: calc(100% - 80px);
+  }
+}
+
+/* ============================================================================
+   DIÁLOGO DE SOLICITUD DE GEOLOCALIZACIÓN
+   ============================================================================ */
+.location-prompt-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.location-prompt-dialog.show {
+  opacity: 1;
+}
+
+.location-prompt-content {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%);
+  border-radius: 15px;
+  padding: 30px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.location-prompt-icon {
+  font-size: 64px;
+  margin-bottom: 15px;
+  animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.location-prompt-content h3 {
+  color: #1e478e;
+  font-size: 24px;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+.location-prompt-content p {
+  color: #555;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+
+.location-prompt-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.btn-prompt-accept,
+.btn-prompt-decline {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-prompt-accept {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+}
+
+.btn-prompt-accept:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+}
+
+.btn-prompt-decline {
+  background: #e0e0e0;
+  color: #666;
+}
+
+.btn-prompt-decline:hover {
+  background: #d0d0d0;
+  transform: translateY(-2px);
+}
+
+/* Responsive para el diálogo */
+@media (max-width: 480px) {
+  .location-prompt-content {
+    padding: 20px;
+  }
+
+  .location-prompt-content h3 {
+    font-size: 20px;
+  }
+
+  .location-prompt-content p {
+    font-size: 14px;
+  }
+
+  .location-prompt-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-prompt-accept,
+  .btn-prompt-decline {
+    width: 100%;
+  }
+}
+
+/* ============================================================================
+   MARCADOR DE UBICACIÓN DEL USUARIO - MEJORADO
+   ============================================================================ */
+.user-location-marker {
+  background: transparent !important;
+  border: none !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.user-location-marker-wrapper {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.user-location-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: rgba(33, 150, 243, 0.4);
+  animation: pulse-location 2s ease-out infinite;
+}
+
+@keyframes pulse-location {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.user-location-marker svg {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Estilo para el círculo de precisión */
+.user-accuracy-circle {
+  stroke-dasharray: 5, 5;
+  animation: dash 20s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -100;
   }
 }
