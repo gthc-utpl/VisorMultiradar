@@ -1804,9 +1804,9 @@ document.addEventListener('DOMContentLoaded', () => {
           // Si ya está autorizado, activar automáticamente
           showUserLocation = true;
           requestUserLocation();
-          // Marcar FAB como activo
-          const fabLocation = document.getElementById('fab-location');
-          if (fabLocation) fabLocation.classList.add('active');
+          // Marcar checkbox como activo
+          const toggleUserLocation = document.getElementById('toggle-user-location');
+          if (toggleUserLocation) toggleUserLocation.checked = true;
         } else if (result.state === 'prompt') {
           // Si no se ha decidido, mostrar un mensaje amigable
           showLocationPrompt();
@@ -1855,9 +1855,9 @@ document.addEventListener('DOMContentLoaded', () => {
     acceptBtn.addEventListener('click', () => {
       showUserLocation = true;
       requestUserLocation();
-      // Marcar FAB como activo
-      const fabLocation = document.getElementById('fab-location');
-      if (fabLocation) fabLocation.classList.add('active');
+      // Marcar checkbox como activo
+      const toggleUserLocation = document.getElementById('toggle-user-location');
+      if (toggleUserLocation) toggleUserLocation.checked = true;
       closePromptDialog(dialog);
     });
 
@@ -1958,11 +1958,11 @@ document.addEventListener('DOMContentLoaded', () => {
     userAccuracyCircle = L.circle([position.lat, position.lng], {
       radius: position.accuracy,
       className: 'user-accuracy-circle',
-      fillColor: '#2196F3',
-      fillOpacity: 0.15,
-      color: '#2196F3',
-      opacity: 0.5,
-      weight: 2
+      fillColor: '#4285F4',
+      fillOpacity: 0.25,
+      color: '#1967D2',
+      opacity: 0.8,
+      weight: 3
     }).addTo(map);
 
     // Crear popup content
@@ -2396,15 +2396,14 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // FAB: Location button
-    const fabLocation = document.getElementById('fab-location');
-    if (fabLocation) {
-      fabLocation.addEventListener('click', () => {
-        if (!showUserLocation) {
+    // Checkbox: User location toggle
+    const toggleUserLocation = document.getElementById('toggle-user-location');
+    if (toggleUserLocation) {
+      toggleUserLocation.addEventListener('change', () => {
+        if (toggleUserLocation.checked) {
           // Activar ubicación
           showUserLocation = true;
           requestUserLocation();
-          fabLocation.classList.add('active');
           showNotification('Ubicación activada');
         } else {
           // Desactivar ubicación
@@ -2426,7 +2425,6 @@ document.addEventListener('DOMContentLoaded', () => {
             accuracyCircle = null;
           }
 
-          fabLocation.classList.remove('active');
           showNotification('Ubicación desactivada');
         }
       });
