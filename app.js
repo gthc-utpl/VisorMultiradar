@@ -602,11 +602,16 @@ document.addEventListener('DOMContentLoaded', () => {
       zoom: 8,
       minZoom: 7,
       maxZoom: 12,
-      zoomControl: true
+      zoomControl: false // Deshabilitar zoom control por defecto
     });
 
+    // Agregar zoom control en la posición inferior izquierda
+    L.control.zoom({
+      position: 'bottomleft'
+    }).addTo(map);
+
     // 🚩 IMPLEMENTACIÓN DEL CONTROL DE CAPAS BASE (Base Layer Control)
-    
+
     // 1. Base Layer Definitions
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -630,15 +635,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Define Base Layers for Control
     const baseLayers = {
         "🗺️ OSM (Original)": osmLayer,
-        "⚫️ Oscuro (Dark Matter)": darkLayer, 
+        "⚫️ Oscuro (Dark Matter)": darkLayer,
         "⚪️ Claro (CartoDB)": lightLayer
     };
 
     // 3. Set OSM as the default layer and add it to the map
     osmLayer.addTo(map);
 
-    // 4. Add the Layer Control (positioned on the left)
-    L.control.layers(baseLayers, null, { collapsed: true, position: 'topleft' }).addTo(map);
+    // 4. Add the Layer Control (positioned at bottom left)
+    L.control.layers(baseLayers, null, { collapsed: true, position: 'bottomleft' }).addTo(map);
 
 
     radarConfigs.forEach(config => {
