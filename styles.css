@@ -858,6 +858,14 @@ body {
   animation: spin 1s linear infinite;
 }
 
+#fab-center-location {
+  top: 290px;
+}
+
+#fab-center-location:active {
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+}
+
 /* ============================================================================
    PANEL DE INFORMACIÓN FLOTANTE (SIDEBAR)
    ============================================================================ */
@@ -1656,6 +1664,11 @@ footer {
   animation: dash 15s linear infinite, pulse-circle 2s ease-in-out infinite;
 }
 
+/* Animación de resaltado al centrar ubicación */
+.user-accuracy-circle.highlight-pulse {
+  animation: dash 15s linear infinite, pulse-circle 2s ease-in-out infinite, highlight-flash 2s ease-out;
+}
+
 @keyframes dash {
   to {
     stroke-dashoffset: -100;
@@ -1668,5 +1681,28 @@ footer {
   }
   50% {
     opacity: 1;
+  }
+}
+
+@keyframes highlight-flash {
+  0% {
+    stroke: rgba(25, 103, 210, 0.8);
+    fill: rgba(66, 133, 244, 0.25);
+    stroke-width: 3;
+  }
+  25% {
+    stroke: rgba(76, 175, 80, 1);
+    fill: rgba(76, 175, 80, 0.5);
+    stroke-width: 6;
+  }
+  50% {
+    stroke: rgba(76, 175, 80, 1);
+    fill: rgba(76, 175, 80, 0.5);
+    stroke-width: 6;
+  }
+  100% {
+    stroke: rgba(25, 103, 210, 0.8);
+    fill: rgba(66, 133, 244, 0.25);
+    stroke-width: 3;
   }
 }

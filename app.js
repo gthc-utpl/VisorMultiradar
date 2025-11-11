@@ -1787,10 +1787,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Solicitar automáticamente la ubicación al usuario después de cargar el mapa
-    setTimeout(() => {
-      promptUserForLocation();
-    }, 2000); // Esperar 2 segundos después de cargar para no ser intrusivo
+    // Ya no se solicita automáticamente - el usuario activa desde el checkbox en configuración
+    // La ubicación se controla desde el panel de configuración (checkbox "Mostrar mi ubicación")
   }
 
   /**
@@ -1978,7 +1976,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Crear o actualizar marcador con SVG personalizado
     if (userLocationMarker) {
       userLocationMarker.setLatLng([position.lat, position.lng]);
-      userLocationMarker.setPopupContent(popupContent);
+
+      // Solo actualizar popup si el checkbox está activado
+      const toggleUserLocation = document.getElementById('toggle-user-location');
+      if (toggleUserLocation && toggleUserLocation.checked) {
+        userLocationMarker.setPopupContent(popupContent);
+      }
     } else {
       // Icono SVG personalizado simplificado y compacto (sin animación)
       const markerHtml = `
@@ -2008,7 +2011,11 @@ document.addEventListener('DOMContentLoaded', () => {
         zIndexOffset: 1000
       }).addTo(map);
 
-      userLocationMarker.bindPopup(popupContent);
+      // Solo agregar popup si el checkbox está activado
+      const toggleUserLocation = document.getElementById('toggle-user-location');
+      if (toggleUserLocation && toggleUserLocation.checked) {
+        userLocationMarker.bindPopup(popupContent);
+      }
     }
   }
 
@@ -2405,6 +2412,19 @@ document.addEventListener('DOMContentLoaded', () => {
           showUserLocation = true;
           requestUserLocation();
           showNotification('Ubicación activada');
+
+          // Si el marcador ya existe, agregar el popup
+          if (userLocationMarker && userPosition) {
+            const popupContent = `
+              <div class="radar-popup">
+                <h4>📍 Tu ubicación</h4>
+                <p><strong>Latitud:</strong> ${userPosition.lat.toFixed(5)}°</p>
+                <p><strong>Longitud:</strong> ${userPosition.lng.toFixed(5)}°</p>
+                <p><strong>Precisión:</strong> ±${Math.round(userPosition.accuracy)}m</p>
+              </div>
+            `;
+            userLocationMarker.bindPopup(popupContent);
+          }
         } else {
           // Desactivar ubicación
           showUserLocation = false;
@@ -2426,6 +2446,35 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           showNotification('Ubicación desactivada');
+        }
+      });
+    }
+
+    // FAB: Center on user location
+    const fabLocation = document.getElementById('fab-center-location');
+    if (fabLocation) {
+      fabLocation.addEventListener('click', () => {
+        if (userPosition && userLocationMarker) {
+          // Centrar mapa en ubicación del usuario
+          map.setView([userPosition.lat, userPosition.lng], 12, {
+            animate: true,
+            duration: 0.8
+          });
+
+          // Resaltar círculo temporalmente
+          if (userAccuracyCircle) {
+            const circleElement = userAccuracyCircle.getElement();
+            if (circleElement) {
+              circleElement.classList.add('highlight-pulse');
+              setTimeout(() => {
+                circleElement.classList.remove('highlight-pulse');
+              }, 2000);
+            }
+          }
+
+          showNotification('Centrado en tu ubicación');
+        } else {
+          showNotification('Primero activa tu ubicación desde Configuración', true);
         }
       });
     }
