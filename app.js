@@ -1209,8 +1209,10 @@ document.addEventListener('DOMContentLoaded', () => {
           });
           // Clear time info if no data
           elements.captureTime.innerHTML = 'Sin datos';
-          elements.dataAge.textContent = '-- min';
-          elements.dataAge.style.color = '';
+          if (elements.dataAge) {
+            elements.dataAge.textContent = '-- min';
+            elements.dataAge.style.color = '';
+          }
           return;
       }
       
@@ -1429,6 +1431,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateDataAge(diffMinutes) {
+    if (!elements.dataAge) return; // El elemento fue eliminado del HTML
+
     elements.dataAge.textContent = `${diffMinutes} min`;
 
     if (diffMinutes > 15) {

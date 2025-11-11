@@ -22,15 +22,11 @@
       <i class="fas fa-satellite-dish"></i>
       <span>Última captura:</span>
       <span id="capture-time">Cargando...</span>
-      <span class="data-age-info">
-        <i class="fas fa-clock"></i>
-        <span id="data-age">-- min</span>
-      </span>
     </div>
     <div class="info-bar-actions">
       <span class="status-indicator">
         <span class="status-dot" id="status-dot"></span>
-        <span id="status-text">Iniciando...</span>
+        <span id="status-text">Listo</span>
       </span>
     </div>
   </div>
@@ -194,16 +190,12 @@
           <div id="map"></div>
         </div>
 
-        <div class="control-bar">
-          <button id="toggle-animation-btn" class="btn-primary" title="Activa/desactiva el modo animación para ver el historial de imágenes">
-            <i class="fas fa-film"></i>
-            <span>Activar animación</span>
-          </button>
-
-          <button id="refresh-button" class="btn-secondary" title="Actualiza los datos con las últimas capturas disponibles">
-            <i class="fas fa-sync-alt" id="refresh-icon"></i>
-            <span>Actualizar</span>
-          </button>
+        <!-- Barra de control eliminada - ahora se usan los FABs (botones flotantes) -->
+        <!-- Elementos ocultos para mantener compatibilidad con el código JavaScript -->
+        <div style="display: none;">
+          <button id="toggle-animation-btn"></button>
+          <button id="refresh-button"></button>
+          <i id="refresh-icon"></i>
         </div>
       </section>
 
