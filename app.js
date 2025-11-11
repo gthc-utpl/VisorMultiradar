@@ -734,12 +734,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function makeDraggable(element, handle) {
     let isDragging = false;
-    let currentX;
-    let currentY;
-    let initialX;
-    let initialY;
+    let currentX = 0;
+    let currentY = 0;
+    let initialX = 0;
+    let initialY = 0;
     let xOffset = 0;
     let yOffset = 0;
+    let animationFrameId = null;
 
     // Obtener posición inicial desde CSS
     const computedStyle = window.getComputedStyle(element);
@@ -758,13 +759,13 @@ document.addEventListener('DOMContentLoaded', () => {
       element.style.bottom = 'auto';
     }
 
-    handle.addEventListener('mousedown', dragStart);
-    document.addEventListener('mousemove', drag);
+    handle.addEventListener('mousedown', dragStart, { passive: false });
+    document.addEventListener('mousemove', drag, { passive: false });
     document.addEventListener('mouseup', dragEnd);
 
     // Touch events para móviles
-    handle.addEventListener('touchstart', dragStart);
-    document.addEventListener('touchmove', drag);
+    handle.addEventListener('touchstart', dragStart, { passive: false });
+    document.addEventListener('touchmove', drag, { passive: false });
     document.addEventListener('touchend', dragEnd);
 
     function dragStart(e) {
@@ -778,30 +779,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (e.target === handle || handle.contains(e.target)) {
         isDragging = true;
-        element.style.zIndex = 1000; // Traer al frente mientras se arrastra
+        element.style.willChange = 'left, top';
+        element.style.zIndex = 1000;
         element.style.cursor = 'grabbing';
-        // Desactivar transiciones durante el arrastre para movimiento suave
         element.style.transition = 'none';
       }
     }
 
     function drag(e) {
-      if (isDragging) {
-        e.preventDefault();
+      if (!isDragging) return;
 
-        if (e.type === 'touchmove') {
-          currentX = e.touches[0].clientX - initialX;
-          currentY = e.touches[0].clientY - initialY;
-        } else {
-          currentX = e.clientX - initialX;
-          currentY = e.clientY - initialY;
-        }
+      e.preventDefault();
 
-        xOffset = currentX;
-        yOffset = currentY;
+      if (e.type === 'touchmove') {
+        currentX = e.touches[0].clientX - initialX;
+        currentY = e.touches[0].clientY - initialY;
+      } else {
+        currentX = e.clientX - initialX;
+        currentY = e.clientY - initialY;
+      }
 
-        // Movimiento libre sin restricciones estrictas
-        // Solo aseguramos que al menos 50px del elemento permanezcan visibles
+      xOffset = currentX;
+      yOffset = currentY;
+
+      // Usar requestAnimationFrame para un movimiento más fluido
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+
+      animationFrameId = requestAnimationFrame(() => {
+        // Movimiento libre - Solo aseguramos que al menos 50px permanezcan visibles
         const rect = element.getBoundingClientRect();
         const minVisiblePx = 50;
 
@@ -810,14 +817,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxY = window.innerHeight - minVisiblePx;
         const minY = 0;
 
-        const newLeft = parseInt(element.style.left || 0);
-        const newTop = parseInt(element.style.top || 0);
+        const currentLeft = parseInt(element.style.left || 0);
+        const currentTop = parseInt(element.style.top || 0);
 
-        const boundedX = Math.max(minX, Math.min(currentX + newLeft, maxX));
-        const boundedY = Math.max(minY, Math.min(currentY + newTop, maxY));
+        const boundedX = Math.max(minX, Math.min(currentX + currentLeft, maxX));
+        const boundedY = Math.max(minY, Math.min(currentY + currentTop, maxY));
 
-        setTranslate(boundedX, boundedY, element);
-      }
+        element.style.left = boundedX + 'px';
+        element.style.top = boundedY + 'px';
+      });
     }
 
     function dragEnd(e) {
@@ -825,16 +833,17 @@ document.addEventListener('DOMContentLoaded', () => {
         initialX = currentX;
         initialY = currentY;
         isDragging = false;
-        element.style.zIndex = 900; // Restaurar z-index original
+
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+
+        element.style.willChange = 'auto';
+        element.style.zIndex = 900;
         element.style.cursor = '';
-        // Restaurar transiciones suaves
         element.style.transition = '';
       }
-    }
-
-    function setTranslate(xPos, yPos, el) {
-      el.style.left = xPos + 'px';
-      el.style.top = yPos + 'px';
     }
   }
 
@@ -846,10 +855,29 @@ document.addEventListener('DOMContentLoaded', () => {
       makeDraggable(animationPanel, animationHeader);
     }
 
-    // Hacer movible la ventana de colores
+    // Hacer movible la ventana de colores (usando solo el header como handle)
     const colorLegendWindow = document.getElementById('color-legend-window');
-    if (colorLegendWindow) {
-      makeDraggable(colorLegendWindow, colorLegendWindow);
+    const colorLegendHeader = colorLegendWindow?.querySelector('.color-legend-header');
+    if (colorLegendWindow && colorLegendHeader) {
+      makeDraggable(colorLegendWindow, colorLegendHeader);
+    }
+
+    // Botón de minimizar panel de animación
+    const animationMinimizeBtn = document.getElementById('animation-minimize-btn');
+    if (animationMinimizeBtn && animationPanel) {
+      animationMinimizeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        animationPanel.classList.toggle('minimized');
+      });
+    }
+
+    // Botón de minimizar ventana de colores
+    const colorLegendMinimizeBtn = document.getElementById('color-legend-minimize');
+    if (colorLegendMinimizeBtn && colorLegendWindow) {
+      colorLegendMinimizeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        colorLegendWindow.classList.toggle('minimized');
+      });
     }
   }
 
@@ -1929,25 +1957,20 @@ document.addEventListener('DOMContentLoaded', () => {
       userLocationMarker.setLatLng([position.lat, position.lng]);
       userLocationMarker.setPopupContent(popupContent);
     } else {
-      // Icono SVG personalizado mejorado con mayor tamaño
+      // Icono SVG personalizado simplificado y compacto (sin animación)
       const markerHtml = `
         <div class="user-location-marker-wrapper">
-          <div class="user-location-pulse"></div>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="90" height="90">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48">
             <defs>
               <linearGradient id="userLocationGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
                 <stop offset="100%" style="stop-color:#1565C0;stop-opacity:1" />
               </linearGradient>
-              <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-                <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
-              </filter>
             </defs>
-            <circle cx="12" cy="12" r="11" fill="url(#userLocationGradient)" filter="url(#shadow)"/>
-            <circle cx="12" cy="12" r="8" fill="white" opacity="0.3"/>
+            <circle cx="12" cy="12" r="10" fill="url(#userLocationGradient)" stroke="white" stroke-width="2"/>
             <circle cx="12" cy="12" r="4" fill="white"/>
             <path d="M12 2 L12 6 M12 18 L12 22 M2 12 L6 12 M18 12 L22 12"
-                  stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                  stroke="white" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </div>
       `;
@@ -1956,8 +1979,8 @@ document.addEventListener('DOMContentLoaded', () => {
         icon: L.divIcon({
           className: 'user-location-marker',
           html: markerHtml,
-          iconSize: [90, 90],
-          iconAnchor: [45, 45]
+          iconSize: [48, 48],
+          iconAnchor: [24, 24]
         }),
         zIndexOffset: 1000
       }).addTo(map);
