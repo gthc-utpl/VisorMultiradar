@@ -1804,6 +1804,9 @@ document.addEventListener('DOMContentLoaded', () => {
           // Si ya está autorizado, activar automáticamente
           showUserLocation = true;
           requestUserLocation();
+          // Marcar FAB como activo
+          const fabLocation = document.getElementById('fab-location');
+          if (fabLocation) fabLocation.classList.add('active');
         } else if (result.state === 'prompt') {
           // Si no se ha decidido, mostrar un mensaje amigable
           showLocationPrompt();
@@ -1852,6 +1855,9 @@ document.addEventListener('DOMContentLoaded', () => {
     acceptBtn.addEventListener('click', () => {
       showUserLocation = true;
       requestUserLocation();
+      // Marcar FAB como activo
+      const fabLocation = document.getElementById('fab-location');
+      if (fabLocation) fabLocation.classList.add('active');
       closePromptDialog(dialog);
     });
 
@@ -2386,6 +2392,42 @@ document.addEventListener('DOMContentLoaded', () => {
               clearInterval(checkRefreshComplete);
             }
           }, 100);
+        }
+      });
+    }
+
+    // FAB: Location button
+    const fabLocation = document.getElementById('fab-location');
+    if (fabLocation) {
+      fabLocation.addEventListener('click', () => {
+        if (!showUserLocation) {
+          // Activar ubicación
+          showUserLocation = true;
+          requestUserLocation();
+          fabLocation.classList.add('active');
+          showNotification('Ubicación activada');
+        } else {
+          // Desactivar ubicación
+          showUserLocation = false;
+
+          // Detener el watch de geolocalización
+          if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+          }
+
+          // Remover marcador y círculo de precisión del mapa
+          if (userLocationMarker) {
+            map.removeLayer(userLocationMarker);
+            userLocationMarker = null;
+          }
+          if (accuracyCircle) {
+            map.removeLayer(accuracyCircle);
+            accuracyCircle = null;
+          }
+
+          fabLocation.classList.remove('active');
+          showNotification('Ubicación desactivada');
         }
       });
     }
