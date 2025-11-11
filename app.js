@@ -1933,89 +1933,64 @@ document.addEventListener('DOMContentLoaded', () => {
       watchId = null;
     }
 
-    if (userLocationMarker) {
-      map.removeLayer(userLocationMarker);
-      userLocationMarker = null;
-    }
-
+    // Solo eliminar el círculo (userLocationMarker es ahora una referencia al círculo)
     if (userAccuracyCircle) {
       map.removeLayer(userAccuracyCircle);
       userAccuracyCircle = null;
+      userLocationMarker = null;
     }
 
     userPosition = null;
   }
 
   function updateUserLocationMarker(position) {
-    // Crear o actualizar círculo de precisión
+    // Crear o actualizar círculo de precisión (sin marcador de icono)
     if (userAccuracyCircle) {
-      map.removeLayer(userAccuracyCircle);
-    }
-
-    userAccuracyCircle = L.circle([position.lat, position.lng], {
-      radius: position.accuracy,
-      className: 'user-accuracy-circle',
-      fillColor: '#4285F4',
-      fillOpacity: 0.25,
-      color: '#1967D2',
-      opacity: 0.8,
-      weight: 3
-    }).addTo(map);
-
-    // Crear popup content
-    const popupContent = `
-      <div class="radar-popup">
-        <h4>📍 Tu ubicación</h4>
-        <p><strong>Latitud:</strong> ${position.lat.toFixed(5)}°</p>
-        <p><strong>Longitud:</strong> ${position.lng.toFixed(5)}°</p>
-        <p><strong>Precisión:</strong> ±${Math.round(position.accuracy)}m</p>
-      </div>
-    `;
-
-    // Crear o actualizar marcador con SVG personalizado
-    if (userLocationMarker) {
-      userLocationMarker.setLatLng([position.lat, position.lng]);
+      userAccuracyCircle.setLatLng([position.lat, position.lng]);
+      userAccuracyCircle.setRadius(position.accuracy);
 
       // Solo actualizar popup si el checkbox está activado
       const toggleUserLocation = document.getElementById('toggle-user-location');
       if (toggleUserLocation && toggleUserLocation.checked) {
-        userLocationMarker.setPopupContent(popupContent);
+        const popupContent = `
+          <div class="radar-popup">
+            <h4>📍 Tu ubicación</h4>
+            <p><strong>Latitud:</strong> ${position.lat.toFixed(5)}°</p>
+            <p><strong>Longitud:</strong> ${position.lng.toFixed(5)}°</p>
+            <p><strong>Precisión:</strong> ±${Math.round(position.accuracy)}m</p>
+          </div>
+        `;
+        userAccuracyCircle.setPopupContent(popupContent);
       }
     } else {
-      // Icono SVG personalizado simplificado y compacto (sin animación)
-      const markerHtml = `
-        <div class="user-location-marker-wrapper">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48">
-            <defs>
-              <linearGradient id="userLocationGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#1565C0;stop-opacity:1" />
-              </linearGradient>
-            </defs>
-            <circle cx="12" cy="12" r="10" fill="url(#userLocationGradient)" stroke="white" stroke-width="2"/>
-            <circle cx="12" cy="12" r="4" fill="white"/>
-            <path d="M12 2 L12 6 M12 18 L12 22 M2 12 L6 12 M18 12 L22 12"
-                  stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </div>
-      `;
-
-      userLocationMarker = L.marker([position.lat, position.lng], {
-        icon: L.divIcon({
-          className: 'user-location-marker',
-          html: markerHtml,
-          iconSize: [48, 48],
-          iconAnchor: [24, 24]
-        }),
-        zIndexOffset: 1000
+      // Crear círculo de precisión por primera vez
+      userAccuracyCircle = L.circle([position.lat, position.lng], {
+        radius: position.accuracy,
+        className: 'user-accuracy-circle',
+        fillColor: '#4285F4',
+        fillOpacity: 0.25,
+        color: '#1967D2',
+        opacity: 0.8,
+        weight: 3
       }).addTo(map);
 
       // Solo agregar popup si el checkbox está activado
       const toggleUserLocation = document.getElementById('toggle-user-location');
       if (toggleUserLocation && toggleUserLocation.checked) {
-        userLocationMarker.bindPopup(popupContent);
+        const popupContent = `
+          <div class="radar-popup">
+            <h4>📍 Tu ubicación</h4>
+            <p><strong>Latitud:</strong> ${position.lat.toFixed(5)}°</p>
+            <p><strong>Longitud:</strong> ${position.lng.toFixed(5)}°</p>
+            <p><strong>Precisión:</strong> ±${Math.round(position.accuracy)}m</p>
+          </div>
+        `;
+        userAccuracyCircle.bindPopup(popupContent);
       }
     }
+
+    // Mantener userLocationMarker como referencia al círculo para compatibilidad
+    userLocationMarker = userAccuracyCircle;
   }
 
   function checkIfUserInRadarZone(position) {
