@@ -2042,13 +2042,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const distanceKm = (minDistance / 1000).toFixed(1);
       console.log(`Usuario en zona de cobertura de ${nearestRadar.name} (${distanceKm} km)`);
 
-      // Centrar mapa en la ubicación del usuario si está en zona de radar
-      if (showUserLocation && userPosition) {
-        map.setView([position.lat, position.lng], 10, { animate: true });
-      }
+      // No centrar automáticamente - el usuario controla el centrado con el FAB
     } else {
       console.log('Usuario fuera de zonas de cobertura de radares');
-      // Si no está en zona de radar, solo actualizar el marcador sin centrar
     }
   }
 
@@ -2407,7 +2403,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleUserLocation) {
       toggleUserLocation.addEventListener('change', () => {
         if (toggleUserLocation.checked) {
-          // Activar popup de detalles
+          // Activar popup de detalles y mostrarlo automáticamente
           if (userLocationMarker && userPosition) {
             const popupContent = `
               <div class="radar-popup">
@@ -2417,7 +2413,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>Precisión:</strong> ±${Math.round(userPosition.accuracy)}m</p>
               </div>
             `;
-            userLocationMarker.bindPopup(popupContent);
+            userLocationMarker.bindPopup(popupContent).openPopup();
             showNotification('Detalles de ubicación activados');
           } else {
             showNotification('Primero debes permitir el acceso a tu ubicación', true);
@@ -2426,7 +2422,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           // Desactivar popup de detalles (pero mantener el marcador)
           if (userLocationMarker) {
-            userLocationMarker.unbindPopup();
+            userLocationMarker.closePopup().unbindPopup();
             showNotification('Detalles de ubicación desactivados');
           }
         }
