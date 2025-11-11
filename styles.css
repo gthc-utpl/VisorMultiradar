@@ -858,6 +858,14 @@ body {
   animation: spin 1s linear infinite;
 }
 
+#fab-location {
+  top: 290px;
+}
+
+#fab-location.active {
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+}
+
 /* ============================================================================
    PANEL DE INFORMACIÓN FLOTANTE (SIDEBAR)
    ============================================================================ */
