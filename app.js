@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let showUserLocation = false;
   let watchId = null;
   let userPosition = null;
+  let shouldCenterOnLocation = false; // Indica si se debe centrar el mapa al obtener la ubicación
 
   // Sistema de precarga y cache
   let preloadedImages = new Map(); // Mapa de URL -> HTMLImageElement
@@ -1787,11 +1788,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Solicitar permiso automáticamente después de un breve retraso
-    // El marcador se muestra con permiso - el checkbox solo controla el popup de detalles
-    setTimeout(() => {
-      promptUserForLocation();
-    }, 2000);
+    // La ubicación se solicitará cuando el usuario haga clic en el botón de centrar
   }
 
   /**
@@ -1944,6 +1941,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateUserLocationMarker(position) {
+    const isFirstTime = !userAccuracyCircle;
+
     // Crear o actualizar círculo de precisión (sin marcador de icono)
     if (userAccuracyCircle) {
       userAccuracyCircle.setLatLng([position.lat, position.lng]);
@@ -1991,6 +1990,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mantener userLocationMarker como referencia al círculo para compatibilidad
     userLocationMarker = userAccuracyCircle;
+
+    // Si es la primera vez y se debe centrar, hacerlo automáticamente
+    if (isFirstTime && shouldCenterOnLocation) {
+      map.setView([position.lat, position.lng], 12, {
+        animate: true,
+        duration: 0.8
+      });
+
+      // Resaltar círculo temporalmente
+      setTimeout(() => {
+        const circleElement = userAccuracyCircle.getElement();
+        if (circleElement) {
+          circleElement.classList.add('highlight-pulse');
+          setTimeout(() => {
+            circleElement.classList.remove('highlight-pulse');
+          }, 2000);
+        }
+      }, 100);
+
+      showNotification('Centrado en tu ubicación');
+      shouldCenterOnLocation = false; // Resetear el flag
+    }
   }
 
   function checkIfUserInRadarZone(position) {
@@ -2428,7 +2449,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
           showNotification('Centrado en tu ubicación');
         } else {
-          showNotification('Primero debes permitir el acceso a tu ubicación', true);
+          // Si no hay ubicación, solicitar permiso y activar flag para centrar
+          shouldCenterOnLocation = true;
+          promptUserForLocation();
         }
       });
     }
