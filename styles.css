@@ -887,7 +887,7 @@ body {
 }
 
 .sidebar.info-panel.visible {
-  right: 0;
+  right: 85px;
 }
 
 .sidebar-section {
