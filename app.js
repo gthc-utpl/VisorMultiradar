@@ -663,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
       radius: radiusMeters,
       color: config.iconColor,
       fillColor: config.color,
-      fillOpacity: 0.05,
+      fillOpacity: 0,
       opacity: 0.3,
       weight: 2
     }).addTo(map);
