@@ -97,6 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
     refresh: document.getElementById('refresh-button'),
     refreshIcon: document.getElementById('refresh-icon'),
 
+    // Fecha personalizada
+    customDateToggle: document.getElementById('custom-date-toggle'),
+    customDateControls: document.getElementById('custom-date-controls'),
+    customDateInput: document.getElementById('custom-date-input'),
+    customDateApply: document.getElementById('custom-date-apply'),
+    customDateStatus: document.getElementById('custom-date-status'),
+
     // Precarga
     preloadProgress: document.getElementById('preload-progress'),
     preloadBar: document.getElementById('preload-bar'),
@@ -140,6 +147,35 @@ document.addEventListener('DOMContentLoaded', () => {
     currentDate.setHours(0, 0, 0, 0); // Starts at the beginning of the cutoff day
 
     while (currentDate <= now) {
+      const year = currentDate.getFullYear();
+      const julianDay = getJulianDay(currentDate);
+      const key = `${year}-${julianDay}`;
+
+      if (!daysSet.has(key)) {
+        daysSet.add(key);
+        days.push({
+          year: year.toString(),
+          julianDay: julianDay,
+          date: new Date(currentDate)
+        });
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return days;
+  }
+
+  function getJulianDaysForPeriodFromDate(hours, endDate) {
+    // Returns the Julian days needed to cover the period ending at endDate
+    const cutoffTime = new Date(endDate.getTime() - (hours * 60 * 60 * 1000));
+
+    const days = [];
+    const daysSet = new Set();
+    let currentDate = new Date(cutoffTime);
+    currentDate.setHours(0, 0, 0, 0); // Starts at the beginning of the cutoff day
+
+    while (currentDate <= endDate) {
       const year = currentDate.getFullYear();
       const julianDay = getJulianDay(currentDate);
       const key = `${year}-${julianDay}`;
@@ -1018,13 +1054,21 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Loads ALL records for the animation period.
    * (This function is only called from downloadAnimationData)
+   * @param {number} hours - Period in hours to load
+   * @param {Date} customEndDate - Optional custom end date (if null, uses current date)
    */
-  async function loadRadarData(hours) {
+  async function loadRadarData(hours, customEndDate = null) {
     allTimestamps = [];
     radarTimestampRanges = {};
 
-    const daysToLoad = getJulianDaysForPeriod(hours);
-    console.log(`Cargando datos de ${daysToLoad.length} día(s) juliano(s) - ${hours} horas`);
+    const daysToLoad = customEndDate
+      ? getJulianDaysForPeriodFromDate(hours, customEndDate)
+      : getJulianDaysForPeriod(hours);
+
+    const dateInfo = customEndDate
+      ? `hasta ${customEndDate.toLocaleString('es-EC')}`
+      : 'desde ahora';
+    console.log(`Cargando datos de ${daysToLoad.length} día(s) juliano(s) - ${hours} horas ${dateInfo}`);
 
     for (const radarConfig of radarConfigs) {
       const radarTimestamps = await loadRadarDays(radarConfig, daysToLoad);
@@ -1470,7 +1514,14 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   async function downloadAnimationData() {
       const hours = parseInt(elements.periodSelect.value, 10);
-      const totalFrames = await loadRadarData(hours);
+
+      // Check if custom date is enabled
+      let customEndDate = null;
+      if (elements.customDateToggle.checked && elements.customDateInput.value) {
+        customEndDate = new Date(elements.customDateInput.value);
+      }
+
+      const totalFrames = await loadRadarData(hours, customEndDate);
 
       if (totalFrames < 2) {
           // If not enough data to animate, disable animation mode
@@ -1590,9 +1641,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (allTimestamps.length === 0) return [];
 
-    const newestTimestamp = allTimestamps[allTimestamps.length - 1];
-    const newestLT = extractLocalTime(newestTimestamp.formatted_time || newestTimestamp.datetime_local);
-    const newestTime = parseLocalTime(newestLT);
+    // Determine the newest time to consider
+    let newestTime;
+    if (elements.customDateToggle.checked && elements.customDateInput.value) {
+      // Use custom date as the newest time
+      newestTime = new Date(elements.customDateInput.value);
+    } else {
+      // Use the actual newest timestamp in the data
+      const newestTimestamp = allTimestamps[allTimestamps.length - 1];
+      const newestLT = extractLocalTime(newestTimestamp.formatted_time || newestTimestamp.datetime_local);
+      newestTime = parseLocalTime(newestLT);
+    }
+
     const cutoffTime = new Date(newestTime.getTime() - (hours * 60 * 60 * 1000));
 
     return allTimestamps.filter(timestamp => {
@@ -2557,7 +2617,120 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     });
-    
+
+    // Custom date toggle
+    elements.customDateToggle.addEventListener('change', () => {
+      if (elements.customDateToggle.checked) {
+        elements.customDateControls.classList.add('active');
+        // Set default date/time to current date
+        if (!elements.customDateInput.value) {
+          const now = new Date();
+          // Format for datetime-local input (YYYY-MM-DDTHH:MM)
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const hours = String(now.getHours()).padStart(2, '0');
+          const minutes = String(now.getMinutes()).padStart(2, '0');
+          elements.customDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+      } else {
+        elements.customDateControls.classList.remove('active');
+        elements.customDateStatus.textContent = '';
+        elements.customDateStatus.className = 'custom-date-status';
+        // Reload with current date if animation is active
+        if (isAnimationActive) {
+          const wasPlaying = animationInterval !== null;
+          stopAnimation();
+          showLoader('Cargando datos actuales...');
+          downloadAnimationData().then(success => {
+            if (success) {
+              const filteredTimestamps = getFilteredTimestamps();
+              preloadAnimationImages(filteredTimestamps).then(() => {
+                setupAnimation();
+                hideLoader();
+                if (wasPlaying) {
+                  setTimeout(() => playAnimation(), 100);
+                }
+              }).catch(error => {
+                console.error('Error precargando imágenes:', error);
+                hideLoader();
+              });
+            } else {
+              hideLoader();
+            }
+          });
+        }
+      }
+    });
+
+    // Custom date apply button
+    elements.customDateApply.addEventListener('click', async () => {
+      if (!elements.customDateInput.value) {
+        elements.customDateStatus.textContent = '⚠️ Seleccione una fecha';
+        elements.customDateStatus.className = 'custom-date-status warning';
+        return;
+      }
+
+      const customDate = new Date(elements.customDateInput.value);
+      const now = new Date();
+
+      // Check if date is in the future
+      if (customDate > now) {
+        elements.customDateStatus.textContent = '❌ La fecha no puede ser futura';
+        elements.customDateStatus.className = 'custom-date-status error';
+        return;
+      }
+
+      // Check if date is too old (more than 30 days back)
+      const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+      if (customDate < thirtyDaysAgo) {
+        elements.customDateStatus.textContent = '⚠️ Datos pueden no estar disponibles';
+        elements.customDateStatus.className = 'custom-date-status warning';
+      } else {
+        elements.customDateStatus.textContent = '🔄 Cargando datos...';
+        elements.customDateStatus.className = 'custom-date-status';
+      }
+
+      // Load data for custom date
+      const wasPlaying = animationInterval !== null;
+      stopAnimation();
+      showLoader(`Descargando datos hasta ${customDate.toLocaleString('es-EC')}...`);
+      elements.customDateApply.disabled = true;
+
+      const success = await downloadAnimationData();
+
+      if (success) {
+        const filteredTimestamps = getFilteredTimestamps();
+        if (filteredTimestamps.length > 0) {
+          elements.loaderText.textContent = `Precargando ${filteredTimestamps.length} imágenes...`;
+          try {
+            await preloadAnimationImages(filteredTimestamps);
+            setupAnimation();
+            elements.customDateStatus.textContent = `✓ ${filteredTimestamps.length} imágenes cargadas`;
+            elements.customDateStatus.className = 'custom-date-status success';
+          } catch (error) {
+            console.error('Error precargando imágenes:', error);
+            elements.customDateStatus.textContent = '❌ Error cargando imágenes';
+            elements.customDateStatus.className = 'custom-date-status error';
+          }
+        } else {
+          elements.customDateStatus.textContent = '❌ No hay datos disponibles';
+          elements.customDateStatus.className = 'custom-date-status error';
+        }
+        hideLoader();
+        elements.customDateApply.disabled = false;
+
+        if (wasPlaying && filteredTimestamps.length > 0) {
+          setTimeout(() => playAnimation(), 100);
+        }
+      } else {
+        hideLoader();
+        elements.customDateApply.disabled = false;
+        elements.customDateStatus.textContent = '❌ Error cargando datos';
+        elements.customDateStatus.className = 'custom-date-status error';
+      }
+    });
+
     // Click on the timeline bar
     elements.timeline.addEventListener('click', (e) => {
         if (!isAnimationActive) return;

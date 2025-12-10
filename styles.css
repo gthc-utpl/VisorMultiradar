@@ -645,6 +645,105 @@ body {
   box-shadow: 0 0 0 3px rgba(30, 71, 142, 0.1);
 }
 
+/* Selector de fecha personalizada */
+.animation-custom-date {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(30, 71, 142, 0.15);
+  margin-top: 10px;
+}
+
+.custom-date-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #1e478e;
+  user-select: none;
+}
+
+.custom-date-toggle input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.custom-date-controls {
+  display: none;
+  gap: 6px;
+  align-items: center;
+  padding-left: 24px;
+}
+
+.custom-date-controls.active {
+  display: flex;
+}
+
+.custom-date-controls input[type="datetime-local"] {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #dbe4f0;
+  border-radius: 6px;
+  background-color: #fff;
+  font-size: 12px;
+  outline: none;
+  color: #1e478e;
+}
+
+.custom-date-controls input[type="datetime-local"]:focus {
+  border-color: #1e478e;
+  box-shadow: 0 0 0 3px rgba(30, 71, 142, 0.1);
+}
+
+.custom-date-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #dbe4f0;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.custom-date-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+}
+
+.custom-date-btn:active {
+  transform: translateY(0);
+}
+
+.custom-date-status {
+  font-size: 11px;
+  padding-left: 24px;
+  min-height: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.custom-date-status.success {
+  color: #4CAF50;
+}
+
+.custom-date-status.error {
+  color: #F44336;
+}
+
+.custom-date-status.warning {
+  color: #FF9800;
+}
+
 .animation-buttons {
   display: flex;
   align-items: center;
