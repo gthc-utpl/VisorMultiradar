@@ -34,7 +34,7 @@ body {
 }
 
 .header-logo {
-  height: 32px;
+  height: 40px;
   width: auto;
   object-fit: contain;
 }
@@ -660,7 +660,7 @@ body {
 
 /* Selector de fecha personalizada */
 .animation-custom-date {
-  display: flex;
+  display: none; /* Oculto temporalmente */
   flex-direction: column;
   gap: 8px;
   font-size: 13px;
@@ -1426,7 +1426,7 @@ footer {
   }
 
   .header-logo {
-    height: 26px;
+    height: 32px;
   }
 
   .header-title {
@@ -1552,7 +1552,7 @@ footer {
    ============================================================================ */
 @media (max-width: 480px) {
   .header-logo {
-    height: 22px;
+    height: 28px;
   }
 
   .header-title {
