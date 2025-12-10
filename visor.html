@@ -99,6 +99,21 @@
                 </select>
               </div>
 
+              <!-- Selector de fecha personalizada -->
+              <div class="animation-custom-date">
+                <label class="custom-date-toggle">
+                  <input type="checkbox" id="custom-date-toggle">
+                  <span>Fecha personalizada</span>
+                </label>
+                <div class="custom-date-controls" id="custom-date-controls">
+                  <input type="datetime-local" id="custom-date-input" title="Seleccionar fecha y hora">
+                  <button id="custom-date-apply" class="custom-date-btn" title="Cargar datos">
+                    <i class="fas fa-check"></i>
+                  </button>
+                </div>
+                <div class="custom-date-status" id="custom-date-status"></div>
+              </div>
+
               <div class="animation-buttons">
                 <button id="animation-first" class="animation-button" title="Primer frame">
                   <i class="fas fa-step-backward"></i>
