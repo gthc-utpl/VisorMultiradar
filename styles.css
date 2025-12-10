@@ -19,7 +19,7 @@ body {
    HEADER - Compacto
    ============================================================================ */
 .header-top {
-  background-color: #0a1e3c;
+  background-color: #003C71;
   color: #fff;
   padding: 10px 15px;
   display: flex;
@@ -27,9 +27,22 @@ body {
   align-items: center;
 }
 
+.header-logo-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+}
+
 .header-title {
   font-size: 16px;
   font-weight: bold;
+  margin: 0;
 }
 
 .header-info {
@@ -1411,11 +1424,15 @@ footer {
   .header-top {
     padding: 8px 12px;
   }
-  
+
+  .header-logo {
+    height: 26px;
+  }
+
   .header-title {
     font-size: 13px;
   }
-  
+
   .header-info {
     font-size: 10px;
   }
@@ -1534,10 +1551,14 @@ footer {
    RESPONSIVE - MÓVILES (480px y menores)
    ============================================================================ */
 @media (max-width: 480px) {
+  .header-logo {
+    height: 22px;
+  }
+
   .header-title {
     font-size: 12px;
   }
-  
+
   .info-bar {
     font-size: 10px;
   }
